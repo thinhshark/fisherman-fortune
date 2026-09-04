@@ -18,7 +18,9 @@ export type CreatureCategory =
 	| "Rare crab";
 
 export type SpeedLabel = "Fast" | "Medium" | "Slow";
-export type WeightLabel = "Light" | "Medium" | "Heavy";
+export type CreatureWeight = "Light" | "Medium" | "Heavy";
+/** @deprecated Use `CreatureWeight`. */
+export type WeightLabel = CreatureWeight;
 export type FrequencyLabel = "Often" | "Normal" | "Medium" | "Seldom";
 export type SpawnZoneLabel = "Upper" | "Middle" | "Lower";
 export type Facing = "right" | "left";
@@ -69,7 +71,7 @@ export interface CategorySheetConfig {
 	category: CreatureCategory;
 	value: CreatureValueSpec;
 	speedLabel: SpeedLabel;
-	weightLabel: WeightLabel;
+	weightLabel: CreatureWeight;
 	frequencyLabel: FrequencyLabel;
 	spawnZones: readonly SpawnZoneLabel[];
 	isCrab: boolean;
@@ -86,7 +88,7 @@ export interface CreatureDefinition {
 	movementSpeed: number;
 	/** Raw spreadsheet speed label. */
 	speedLabel: SpeedLabel;
-	weight: WeightLabel;
+	weight: CreatureWeight;
 	frequencyWeight: number;
 	frequencyLabel: FrequencyLabel;
 	spawnZone: readonly SpawnZoneLabel[];
@@ -274,6 +276,58 @@ if (CREATURE_CATALOG.length !== 33) {
 	throw new Error(
 		`CREATURE_CATALOG must contain 33 entries, got ${CREATURE_CATALOG.length}`,
 	);
+}
+
+export function assertCreatureWeight(
+	value: unknown,
+): asserts value is CreatureWeight {
+	if (value !== "Light" && value !== "Medium" && value !== "Heavy") {
+		throw new Error(`Invalid creature weight: ${String(value)}`);
+	}
+}
+
+for (const creature of CREATURE_CATALOG) {
+	assertCreatureWeight(creature.weight);
+}
+
+{
+	const bigFish = CREATURE_CATALOG.filter((c) =>
+		c.id.startsWith("big-fish-"),
+	);
+	if (bigFish.length !== 6) {
+		throw new Error(
+			`Expected exactly 6 big-fish-* catalog entries, got ${bigFish.length}`,
+		);
+	}
+	for (const creature of bigFish) {
+		if (creature.category !== "Big Fish") {
+			throw new Error(
+				`${creature.id} must have category "Big Fish", got ${creature.category}`,
+			);
+		}
+		if (creature.weight !== "Heavy") {
+			throw new Error(
+				`${creature.id} must have weight "Heavy", got ${creature.weight}`,
+			);
+		}
+	}
+
+	const byCategory: Record<CreatureCategory, CreatureWeight> = {
+		"Small Fish": "Light",
+		Jelly: "Medium",
+		"Big Fish": "Heavy",
+		"Toxic Fish": "Light",
+		"Normal crab": "Light",
+		"Rare crab": "Light",
+	};
+	for (const creature of CREATURE_CATALOG) {
+		const expected = byCategory[creature.category];
+		if (creature.weight !== expected) {
+			throw new Error(
+				`${creature.id} (${creature.category}) must have weight "${expected}", got "${creature.weight}"`,
+			);
+		}
+	}
 }
 
 export function getCreatureById(

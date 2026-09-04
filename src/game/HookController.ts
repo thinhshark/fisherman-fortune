@@ -1,6 +1,86 @@
 import Phaser from "phaser";
+import {
+	assertCreatureWeight,
+	type CreatureCategory,
+	type CreatureWeight,
+} from "./CreatureCatalog";
 
 export type HookState = "SWINGING" | "CASTING" | "RETRACTING";
+export type RetractReason = "empty" | "caught";
+
+/** Dev-only: log once when a retraction begins. */
+const LOG_RETRACTION = false;
+
+/** Dev-only: log once per state change with jaw target deltas. */
+const LOG_JAW_TARGETS = false;
+
+export const EMPTY_RETRACT_SPEED_PX_PER_SEC = 850;
+
+export const CAUGHT_RETRACT_SPEED_PX_PER_SEC: Record<CreatureWeight, number> = {
+	Light: 500,
+	Medium: 280,
+	Heavy: 120,
+};
+
+/**
+ * Exhaustive caught-retract speed lookup.
+ * Never returns the empty-hook speed (850).
+ */
+export function getRetractSpeed(weight: CreatureWeight): number {
+	assertCreatureWeight(weight);
+	switch (weight) {
+		case "Light":
+			return CAUGHT_RETRACT_SPEED_PX_PER_SEC.Light;
+		case "Medium":
+			return CAUGHT_RETRACT_SPEED_PX_PER_SEC.Medium;
+		case "Heavy":
+			return CAUGHT_RETRACT_SPEED_PX_PER_SEC.Heavy;
+		default: {
+			const invalid: never = weight;
+			throw new Error(`Invalid creature weight: ${String(invalid)}`);
+		}
+	}
+}
+
+/** @deprecated Use `getRetractSpeed`. */
+export const retractSpeedForWeight = getRetractSpeed;
+
+{
+	const extension = 600;
+	const empty = extension / EMPTY_RETRACT_SPEED_PX_PER_SEC;
+	const light = extension / getRetractSpeed("Light");
+	const medium = extension / getRetractSpeed("Medium");
+	const heavy = extension / getRetractSpeed("Heavy");
+
+	if (!(heavy > medium && medium > light && light > empty)) {
+		throw new Error(
+			`Retract duration order invalid for ${extension}px: ` +
+				`empty=${empty}, light=${light}, medium=${medium}, heavy=${heavy}`,
+		);
+	}
+	if (getRetractSpeed("Heavy") !== 120) {
+		throw new Error("Heavy retract speed must be exactly 120 px/s");
+	}
+	if (getRetractSpeed("Light") !== 500) {
+		throw new Error("Light retract speed must be exactly 500 px/s");
+	}
+	if (getRetractSpeed("Medium") !== 280) {
+		throw new Error("Medium retract speed must be exactly 280 px/s");
+	}
+	// Category → weight → speed contracts.
+	if (getRetractSpeed("Heavy") !== 120) {
+		throw new Error("Big Fish (Heavy) must select 120 px/s");
+	}
+	if (Math.abs(empty - 600 / 850) > 1e-9) {
+		throw new Error("Empty 600px duration must be 600/850");
+	}
+	if (Math.abs(light - 1.2) > 1e-9) {
+		throw new Error("Light 600px duration must be exactly 1.2s");
+	}
+	if (Math.abs(heavy - 5) > 1e-9) {
+		throw new Error("Heavy 600px duration must be exactly 5s");
+	}
+}
 
 interface CapturedImageTransform {
 	worldX: number;
@@ -13,29 +93,41 @@ interface CapturedImageTransform {
 	visible: boolean;
 }
 
+export interface RetractionStartInfo {
+	creatureId?: string;
+	category?: CreatureCategory;
+	weight?: CreatureWeight;
+}
+
 /**
  * Hook assembly controller: idle swing, cast, and retract.
- * Rope stem + both hook halves live in one Container pivoted at the boat anchor hole.
+ * Rope stem + both jaw pivots live in one Container pivoted at the boat anchor hole.
  * Only the Container rotates while swinging; casting extends along frozen local +Y.
+ * Jaw open/close is applied to nested hinge pivots, not the PNG bounding-box centers.
  */
 export class HookController {
 	private static readonly MAX_ANGLE_DEG = 55;
 	private static readonly CYCLE_MS = 3200;
 	private static readonly CAST_SPEED_PX_PER_SEC = 650;
-	private static readonly RETRACT_SPEED_PX_PER_SEC = 850;
-	private static readonly CAUGHT_RETRACT_MIN_PX_PER_SEC = 180;
-	private static readonly CAUGHT_RETRACT_MAX_PX_PER_SEC = 750;
-	/**
-	 * Construct CalculateDuration: (distance / 64) * ObjectWeight
-	 * ⇒ speed = 64 / ObjectWeight. Empty-hook HookWeight was 0.1 ⇒ 640 px/s.
-	 */
-	private static readonly CONSTRUCT_BASE_RETRACT_PX_PER_SEC = 64 / 0.1;
 	private static readonly HOOK_COLLISION_RADIUS = 32;
+	private static readonly ATTACH_OFFSET_PX = 24;
 	private static readonly BOUNDARY_MARGIN_PX = 35;
 	private static readonly CAST_ROPE_OUTER_COLOR = 0x4b2a18;
 	private static readonly CAST_ROPE_INNER_COLOR = 0xc98a32;
 	private static readonly CAST_ROPE_OUTER_WIDTH = 8;
 	private static readonly CAST_ROPE_INNER_WIDTH = 4;
+
+	/**
+	 * Nested-pivot deltas relative to rest (pivot angle 0).
+	 * Runtime observation: the previous "OPEN" (-35/+35) assignment visually
+	 * closed the claws, and the previous "CLOSED" (+22/-22) visually opened them.
+	 * Names below match the observed visual effect after correcting state mapping.
+	 */
+	private static readonly JAW_OPEN_LEFT_DEG = 22;
+	private static readonly JAW_OPEN_RIGHT_DEG = -22;
+	private static readonly JAW_CLOSED_LEFT_DEG = -35;
+	private static readonly JAW_CLOSED_RIGHT_DEG = 35;
+	private static readonly JAW_TRANSITION_MS = 120;
 
 	private readonly scene: Phaser.Scene;
 	private readonly hookContainer: Phaser.GameObjects.Container;
@@ -43,16 +135,14 @@ export class HookController {
 	private readonly hookStem: Phaser.GameObjects.Image;
 	private readonly hookLeft: Phaser.GameObjects.Image;
 	private readonly hookRight: Phaser.GameObjects.Image;
+	private readonly hookLeftPivot: Phaser.GameObjects.Container;
+	private readonly hookRightPivot: Phaser.GameObjects.Container;
 
 	private readonly anchorX: number;
 	private readonly anchorY: number;
 
 	private readonly ropeLocalX: number;
 	private readonly ropeLocalY: number;
-	private readonly hookLeftLocalX: number;
-	private readonly hookLeftLocalY: number;
-	private readonly hookRightLocalX: number;
-	private readonly hookRightLocalY: number;
 	private readonly hookCenterRestLocalX: number;
 	private readonly hookCenterRestLocalY: number;
 	private readonly restingHookDistance: number;
@@ -63,9 +153,18 @@ export class HookController {
 	private elapsedMs = 0;
 	private extension = 0;
 	private maxExtension = 0;
-	private retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
+	/** Active retract speed; only rewritten when a retract begins or delivery finishes. */
+	private currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+	private retractReason: RetractReason = "empty";
 	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
+
+	private jawLeftFromDeg = 0;
+	private jawLeftToDeg = 0;
+	private jawRightFromDeg = 0;
+	private jawRightToDeg = 0;
+	private jawTweenElapsedMs = 0;
+	private jawTweening = false;
 
 	constructor(
 		scene: Phaser.Scene,
@@ -94,19 +193,30 @@ export class HookController {
 
 		this.ropeLocalX = rope.x;
 		this.ropeLocalY = rope.y;
-		this.hookLeftLocalX = hookLeft.x;
-		this.hookLeftLocalY = hookLeft.y;
-		this.hookRightLocalX = hookRight.x;
-		this.hookRightLocalY = hookRight.y;
 
 		this.hookCenterRestLocalX =
-			(this.hookLeftLocalX + this.hookRightLocalX) * 0.5;
+			(this.hookLeft.x + this.hookRight.x) * 0.5;
 		this.hookCenterRestLocalY =
-			(this.hookLeftLocalY + this.hookRightLocalY) * 0.5;
+			(this.hookLeft.y + this.hookRight.y) * 0.5;
 		this.restingHookDistance = Math.hypot(
 			this.hookCenterRestLocalX,
 			this.hookCenterRestLocalY,
 		);
+
+		this.hookLeftPivot = scene.add.container(
+			this.hookCenterRestLocalX,
+			this.hookCenterRestLocalY,
+		);
+		this.hookRightPivot = scene.add.container(
+			this.hookCenterRestLocalX,
+			this.hookCenterRestLocalY,
+		);
+		this.hookLeftPivot.setName("hookLeftPivot");
+		this.hookRightPivot.setName("hookRightPivot");
+		this.hookContainer.add(this.hookLeftPivot);
+		this.hookContainer.add(this.hookRightPivot);
+		this.reparentJawToPivot(this.hookLeft, this.hookLeftPivot);
+		this.reparentJawToPivot(this.hookRight, this.hookRightPivot);
 
 		// Continuous cast line in Container-local space (no separate rotation).
 		this.castRope = scene.add.graphics();
@@ -146,12 +256,26 @@ export class HookController {
 	}
 
 	/**
-	 * World-space center of the joined hook (not the boat-anchor pivot).
-	 * Derived from the Container world matrix and the current hook-half local center.
+	 * World-space center of the joined hook hinge (not the boat-anchor pivot).
+	 * Derived from the Container world matrix and the hinge local point + extension.
 	 */
 	get hookWorldPosition(): Readonly<{ x: number; y: number }> {
 		this.updateHookWorldPosition();
 		return { x: this.hookWorld.x, y: this.hookWorld.y };
+	}
+
+	/**
+	 * Slightly down the hook from the hinge so closing jaws hold the catch
+	 * without covering the central joint.
+	 */
+	get hookAttachWorldPosition(): Readonly<{ x: number; y: number }> {
+		this.updateHookWorldPosition();
+		const rot = this.hookContainer.rotation;
+		const offset = HookController.ATTACH_OFFSET_PX;
+		return {
+			x: this.hookWorld.x - Math.sin(rot) * offset,
+			y: this.hookWorld.y + Math.cos(rot) * offset,
+		};
 	}
 
 	get hookCollisionRadius(): number {
@@ -178,14 +302,26 @@ export class HookController {
 	 * Interrupt CASTING and start RETRACTING immediately, keeping the current
 	 * extension and frozen swing angle. Only succeeds while CASTING.
 	 *
-	 * `weight` is the spreadsheet Weight ordinal: Light=1, Medium=2, Heavy=3.
+	 * Sets caught retract speed before changing state so the empty-retract path
+	 * cannot overwrite it.
 	 */
-	beginRetractingWithCatch(weight: number): boolean {
+	beginRetractingWithCatch(
+		weight: CreatureWeight,
+		info?: RetractionStartInfo,
+	): boolean {
 		if (this._state !== "CASTING") {
 			return false;
 		}
-		this.retractSpeed = HookController.caughtRetractSpeed(weight);
-		this._state = "RETRACTING";
+
+		const caughtRetractSpeed = getRetractSpeed(weight);
+		this.currentRetractSpeed = caughtRetractSpeed;
+		this.retractReason = "caught";
+		this.setState("RETRACTING");
+		this.logRetractionStart({
+			creatureId: info?.creatureId,
+			category: info?.category,
+			weight,
+		});
 		return true;
 	}
 
@@ -206,6 +342,7 @@ export class HookController {
 				this.updateRetracting(delta);
 				break;
 		}
+		this.updateJawAngles(delta);
 	}
 
 	private registerInput(): void {
@@ -244,8 +381,9 @@ export class HookController {
 			this.hookContainer.rotation,
 		);
 		this.extension = 0;
-		this.retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
-		this._state = "CASTING";
+		this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+		this.retractReason = "empty";
+		this.setState("CASTING");
 		this.applyExtension();
 	}
 
@@ -266,24 +404,33 @@ export class HookController {
 		if (this.extension >= this.maxExtension) {
 			this.extension = this.maxExtension;
 			this.applyExtension();
-			this.retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
-			this._state = "RETRACTING";
+			this.beginEmptyRetracting();
 			return;
 		}
 
 		this.applyExtension();
 	}
 
+	private beginEmptyRetracting(): void {
+		// Empty-only path. Must never run after a successful catch.
+		this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+		this.retractReason = "empty";
+		this.setState("RETRACTING");
+		this.logRetractionStart({});
+	}
+
 	private updateRetracting(delta: number): void {
 		const deltaSec = delta / 1000;
-		this.extension -= this.retractSpeed * deltaSec;
+		// Use the speed stored when retraction began — never recompute per frame.
+		this.extension -= this.currentRetractSpeed * deltaSec;
 
 		if (this.extension <= 0) {
 			this.extension = 0;
 			this.applyExtension();
 			this.restoreRestingLocalPositions();
-			this.retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
-			this._state = "SWINGING";
+			this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+			this.retractReason = "empty";
+			this.setState("SWINGING");
 			this.notifyRetractComplete();
 			return;
 		}
@@ -291,19 +438,87 @@ export class HookController {
 		this.applyExtension();
 	}
 
+	private setState(next: HookState): void {
+		this._state = next;
+		switch (next) {
+			case "SWINGING":
+				this.setJawTarget(0, 0);
+				break;
+			case "CASTING":
+				// Visually wider than rest (claw tips farther apart).
+				this.setJawTarget(
+					HookController.JAW_OPEN_LEFT_DEG,
+					HookController.JAW_OPEN_RIGHT_DEG,
+				);
+				break;
+			case "RETRACTING":
+				// Visually closed inward (claw tips closer together).
+				this.setJawTarget(
+					HookController.JAW_CLOSED_LEFT_DEG,
+					HookController.JAW_CLOSED_RIGHT_DEG,
+				);
+				break;
+			default: {
+				const invalid: never = next;
+				throw new Error(`Invalid hook state: ${String(invalid)}`);
+			}
+		}
+	}
+
+	private setJawTarget(leftDeg: number, rightDeg: number): void {
+		this.jawLeftFromDeg = this.hookLeftPivot.angle;
+		this.jawRightFromDeg = this.hookRightPivot.angle;
+		this.jawLeftToDeg = leftDeg;
+		this.jawRightToDeg = rightDeg;
+		this.jawTweenElapsedMs = 0;
+		this.jawTweening = true;
+
+		if (LOG_JAW_TARGETS) {
+			console.info("[jaw-target]", {
+				state: this._state,
+				leftTargetDelta: leftDeg,
+				rightTargetDelta: rightDeg,
+			});
+		}
+	}
+
+	private updateJawAngles(delta: number): void {
+		if (!this.jawTweening) {
+			return;
+		}
+
+		this.jawTweenElapsedMs += delta;
+		const t = Math.min(
+			1,
+			this.jawTweenElapsedMs / HookController.JAW_TRANSITION_MS,
+		);
+		const k = t * t * (3 - 2 * t);
+		this.hookLeftPivot.setAngle(
+			Phaser.Math.Linear(this.jawLeftFromDeg, this.jawLeftToDeg, k),
+		);
+		this.hookRightPivot.setAngle(
+			Phaser.Math.Linear(this.jawRightFromDeg, this.jawRightToDeg, k),
+		);
+
+		if (t >= 1) {
+			this.jawTweening = false;
+			this.hookLeftPivot.setAngle(this.jawLeftToDeg);
+			this.hookRightPivot.setAngle(this.jawRightToDeg);
+		}
+	}
+
 	private applyExtension(): void {
 		const height = Math.max(this.extension, 0);
 		this.redrawCastRope(height);
 
-		// Move the existing aligned assembly together in local Y only.
 		this.hookStem.setPosition(this.ropeLocalX, this.ropeLocalY + height);
-		this.hookLeft.setPosition(
-			this.hookLeftLocalX,
-			this.hookLeftLocalY + height,
+		this.hookLeftPivot.setPosition(
+			this.hookCenterRestLocalX,
+			this.hookCenterRestLocalY + height,
 		);
-		this.hookRight.setPosition(
-			this.hookRightLocalX,
-			this.hookRightLocalY + height,
+		this.hookRightPivot.setPosition(
+			this.hookCenterRestLocalX,
+			this.hookCenterRestLocalY + height,
 		);
 	}
 
@@ -343,42 +558,51 @@ export class HookController {
 
 	private restoreRestingLocalPositions(): void {
 		this.hookStem.setPosition(this.ropeLocalX, this.ropeLocalY);
-		this.hookLeft.setPosition(this.hookLeftLocalX, this.hookLeftLocalY);
-		this.hookRight.setPosition(this.hookRightLocalX, this.hookRightLocalY);
+		this.hookLeftPivot.setPosition(
+			this.hookCenterRestLocalX,
+			this.hookCenterRestLocalY,
+		);
+		this.hookRightPivot.setPosition(
+			this.hookCenterRestLocalX,
+			this.hookCenterRestLocalY,
+		);
 		this.redrawCastRope(0);
 	}
 
 	private updateHookWorldPosition(): void {
-		const localX = (this.hookLeft.x + this.hookRight.x) * 0.5;
-		const localY = (this.hookLeft.y + this.hookRight.y) * 0.5;
 		this.hookContainer
 			.getWorldTransformMatrix(this.worldMatrix)
-			.transformPoint(localX, localY, this.hookWorld);
-	}
-
-	/**
-	 * Spreadsheet Weight is Light/Medium/Heavy (ordinal 1/2/3). Construct's
-	 * live fish-catch tween used `fishes.Width / back_speed` (duration, not a
-	 * constant px/s), so it cannot be reused here. Map ordinals onto the
-	 * Construct empty-hook HookWeight scale (0.1) and invert CalculateDuration:
-	 * speed = 64 / (0.1 * ordinal) = 640 / ordinal, then clamp to 180–750.
-	 * Heavier Weight ⇒ lower speed. Empty retract stays 850.
-	 */
-	private static caughtRetractSpeed(weight: number): number {
-		const ordinal = Math.max(weight, 1);
-		const speed =
-			HookController.CONSTRUCT_BASE_RETRACT_PX_PER_SEC / ordinal;
-		return Phaser.Math.Clamp(
-			speed,
-			HookController.CAUGHT_RETRACT_MIN_PX_PER_SEC,
-			HookController.CAUGHT_RETRACT_MAX_PX_PER_SEC,
-		);
+			.transformPoint(
+				this.hookCenterRestLocalX,
+				this.hookCenterRestLocalY + this.extension,
+				this.hookWorld,
+			);
 	}
 
 	private notifyRetractComplete(): void {
 		for (const listener of Array.from(this.retractCompleteListeners)) {
 			listener();
 		}
+	}
+
+	private logRetractionStart(info: RetractionStartInfo): void {
+		if (!LOG_RETRACTION) {
+			return;
+		}
+		const extensionAtStart = this.extension;
+		const selectedRetractSpeed = this.currentRetractSpeed;
+		console.info("[retraction]", {
+			creatureId: info.creatureId,
+			category: info.category,
+			weight: info.weight,
+			retractReason: this.retractReason,
+			selectedRetractSpeed,
+			extensionAtStart,
+			expectedDurationSeconds:
+				selectedRetractSpeed > 0
+					? extensionAtStart / selectedRetractSpeed
+					: Number.POSITIVE_INFINITY,
+		});
 	}
 
 	/**
@@ -485,5 +709,27 @@ export class HookController {
 		child.setScale(transform.scaleX, transform.scaleY);
 		child.setOrigin(transform.originX, transform.originY);
 		child.setVisible(transform.visible);
+	}
+
+	private reparentJawToPivot(
+		jaw: Phaser.GameObjects.Image,
+		pivot: Phaser.GameObjects.Container,
+	): void {
+		const localX = jaw.x - pivot.x;
+		const localY = jaw.y - pivot.y;
+		const angle = jaw.angle;
+		const scaleX = jaw.scaleX;
+		const scaleY = jaw.scaleY;
+		const originX = jaw.originX;
+		const originY = jaw.originY;
+		const visible = jaw.visible;
+
+		this.hookContainer.remove(jaw);
+		pivot.add(jaw);
+		jaw.setPosition(localX, localY);
+		jaw.setAngle(angle);
+		jaw.setScale(scaleX, scaleY);
+		jaw.setOrigin(originX, originY);
+		jaw.setVisible(visible);
 	}
 }

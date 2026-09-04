@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-import type { CreatureCategory, WeightLabel } from "./CreatureCatalog";
+import type { CreatureCategory, CreatureWeight } from "./CreatureCatalog";
 import type { CatchableCreature, CreatureSpawner } from "./CreatureSpawner";
-import type { HookController } from "./HookController";
+import { type HookController } from "./HookController";
 
 /** Dev-only: stroke the hook collision circle and catchable bounds. */
 const SHOW_CATCH_DEBUG = false;
@@ -9,20 +9,13 @@ const SHOW_CATCH_DEBUG = false;
 /** Behind the hook Container (depth 20), above water (1) and swimming fish (5). */
 const CAUGHT_DEPTH = 15;
 
-/** Spreadsheet Weight labels → ordinals consumed by HookController. */
-const WEIGHT_ORDINAL: Record<WeightLabel, number> = {
-	Light: 1,
-	Medium: 2,
-	Heavy: 3,
-};
-
 export const CREATURE_DELIVERED_EVENT = "creature-delivered";
 
 export interface CreatureDeliveredPayload {
 	id: string;
 	category: CreatureCategory;
 	value: number;
-	weight: WeightLabel;
+	weight: CreatureWeight;
 	isToxic: boolean;
 }
 
@@ -138,8 +131,14 @@ export class CatchController {
 			return;
 		}
 
-		const weight = WEIGHT_ORDINAL[best.definition.weight];
-		if (!this.hook.beginRetractingWithCatch(weight)) {
+		const weight = best.definition.weight;
+		if (
+			!this.hook.beginRetractingWithCatch(weight, {
+				creatureId: best.definition.id,
+				category: best.definition.category,
+				weight,
+			})
+		) {
 			this.spawner.destroyClaimedCreature(best.sprite);
 			return;
 		}
@@ -154,7 +153,7 @@ export class CatchController {
 		if (!caught || !caught.sprite.active) {
 			return;
 		}
-		const hookPos = this.hook.hookWorldPosition;
+		const hookPos = this.hook.hookAttachWorldPosition;
 		caught.sprite.setPosition(hookPos.x, hookPos.y);
 	}
 
