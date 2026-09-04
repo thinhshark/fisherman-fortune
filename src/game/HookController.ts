@@ -8,6 +8,17 @@ import {
 export type HookState = "SWINGING" | "CASTING" | "RETRACTING";
 export type RetractReason = "empty" | "caught";
 
+export const HOOK_STATE_CHANGED_EVENT = "hook-state-changed";
+
+export interface HookStateChangedPayload {
+	state: HookState;
+	previousState: HookState;
+	retractReason?: RetractReason;
+	creatureId?: string;
+	itemId?: string;
+	category?: CreatureCategory;
+}
+
 /** Dev-only: log once when a retraction begins. */
 const LOG_RETRACTION = false;
 
@@ -161,6 +172,13 @@ export class HookController {
 	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
 	private inputEnabled = true;
+	/** Metadata attached to the next RETRACTING state-changed emit. */
+	private pendingRetractInfo?: {
+		retractReason: RetractReason;
+		creatureId?: string;
+		itemId?: string;
+		category?: CreatureCategory;
+	};
 
 	private jawLeftFromDeg = 0;
 	private jawLeftToDeg = 0;
@@ -352,6 +370,12 @@ export class HookController {
 
 		this.currentRetractSpeed = retractSpeed;
 		this.retractReason = "caught";
+		this.pendingRetractInfo = {
+			retractReason: "caught",
+			creatureId: info?.creatureId,
+			itemId: info?.itemId,
+			category: info?.category,
+		};
 		this.setState("RETRACTING");
 		this.logRetractionStart({
 			creatureId: info?.creatureId,
@@ -455,6 +479,7 @@ export class HookController {
 		// Empty-only path. Must never run after a successful catch.
 		this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
 		this.retractReason = "empty";
+		this.pendingRetractInfo = { retractReason: "empty" };
 		this.setState("RETRACTING");
 		this.logRetractionStart({});
 	}
@@ -479,7 +504,25 @@ export class HookController {
 	}
 
 	private setState(next: HookState): void {
+		if (this._state === next) {
+			return;
+		}
+		const previousState = this._state;
 		this._state = next;
+
+		const payload: HookStateChangedPayload = {
+			state: next,
+			previousState,
+		};
+		if (next === "RETRACTING" && this.pendingRetractInfo) {
+			payload.retractReason = this.pendingRetractInfo.retractReason;
+			payload.creatureId = this.pendingRetractInfo.creatureId;
+			payload.itemId = this.pendingRetractInfo.itemId;
+			payload.category = this.pendingRetractInfo.category;
+			this.pendingRetractInfo = undefined;
+		}
+		this.scene.events.emit(HOOK_STATE_CHANGED_EVENT, payload);
+
 		switch (next) {
 			case "SWINGING":
 				this.setJawTarget(0, 0);

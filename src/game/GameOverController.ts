@@ -3,6 +3,7 @@ import {
 	GAME_FINISHED_EVENT,
 	type GameFinishedPayload,
 } from "./GameSession";
+import type { AudioController } from "./AudioController";
 
 const OVERLAY_DEPTH = 2000;
 const OVERLAY_ALPHA = 0.72;
@@ -19,6 +20,7 @@ const FONT_FAMILY = "Luckiest Guy";
  */
 export class GameOverController {
 	private readonly scene: Phaser.Scene;
+	private readonly audio?: AudioController;
 	private readonly boundFinished = this.handleGameFinished.bind(this);
 	private readonly boundResize = this.layout.bind(this);
 	private readonly boundRestart = this.handleRestart.bind(this);
@@ -34,8 +36,9 @@ export class GameOverController {
 	private restartArmed = false;
 	private finalScore = 0;
 
-	constructor(scene: Phaser.Scene) {
+	constructor(scene: Phaser.Scene, audio?: AudioController) {
 		this.scene = scene;
+		this.audio = audio;
 		scene.events.on(GAME_FINISHED_EVENT, this.boundFinished);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
 	}
@@ -62,6 +65,7 @@ export class GameOverController {
 		this.visible = true;
 		this.restartArmed = true;
 		this.finalScore = payload.finalScore;
+		this.audio?.playResultGameOver();
 		this.buildUi();
 		this.layout();
 		this.scene.scale.on("resize", this.boundResize);

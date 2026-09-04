@@ -23,6 +23,12 @@ const HOLD_MS = 520;
 const FADE_MS = 900;
 /** Total visible duration ≈ 1600 ms. */
 
+/** Floating money text: +300$ / -25$ (dollar after the number). */
+export function formatMoneyFeedback(delta: number): string {
+	const amount = Math.abs(delta);
+	return delta >= 0 ? `+${amount}$` : `-${amount}$`;
+}
+
 /**
  * World-space floating reward / time text at any catchable target's
  * disappearance point (fish, jelly, crab, scrap, gems, star, etc.).
@@ -79,10 +85,7 @@ export class CatchFeedbackController {
 			return;
 		}
 
-		const text =
-			payload.delta > 0
-				? `+$${payload.delta}`
-				: `-$${Math.abs(payload.delta)}`;
+		const text = formatMoneyFeedback(payload.delta);
 		const color =
 			payload.delta > 0 ? MONEY_POSITIVE_COLOR : MONEY_NEGATIVE_COLOR;
 

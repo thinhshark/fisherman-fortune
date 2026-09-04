@@ -13,6 +13,7 @@ import { GameSession, GAME_ENDING_EVENT } from "../game/GameSession";
 import { GameOverController } from "../game/GameOverController";
 import { HudController } from "../game/HudController";
 import { ItemSpawner } from "../game/ItemSpawner";
+import { AudioController } from "../game/AudioController";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -91,6 +92,7 @@ export default class Level extends Phaser.Scene {
 	private gameOverController!: GameOverController;
 	private hudController!: HudController;
 	private itemSpawner!: ItemSpawner;
+	private audioController!: AudioController;
 	private readonly boundGameEnding = this.handleGameEnding.bind(this);
 	private endingHandled = false;
 
@@ -104,13 +106,18 @@ export default class Level extends Phaser.Scene {
 		this.gameSession = new GameSession(this);
 		this.catchFeedbackController = new CatchFeedbackController(this);
 		this.hudController = new HudController(this);
-		this.gameOverController = new GameOverController(this);
+		this.audioController = new AudioController(this);
+		this.gameOverController = new GameOverController(
+			this,
+			this.audioController,
+		);
 		this.applyDisplayDepths();
 
 		this.events.on(GAME_ENDING_EVENT, this.boundGameEnding);
 
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.events.off(GAME_ENDING_EVENT, this.boundGameEnding);
+			this.audioController.destroy();
 			this.gameOverController.destroy();
 			this.hudController.destroy();
 			this.catchFeedbackController.destroy();
