@@ -14,26 +14,91 @@
     "displayList": [
         {
             "type": "Image",
-            "id": "bb2d413c-02b3-404d-b1c0-cf46ce1e7f07",
-            "label": "fufuSuperDino",
+            "id": "4ebf5030-cb45-43fe-adf7-8c4212542994",
+            "label": "gameBackground",
+            "scope": "PUBLIC",
             "texture": {
-                "key": "FufuSuperDino"
+                "key": "game-bg"
             },
-            "x": 640,
-            "y": 257
+            "x": 642,
+            "y": 295.3333333333333,
+            "scaleX": 0.9548611111111112,
+            "scaleY": 0.8950892857142857
         },
         {
-            "type": "Text",
-            "id": "5c228da6-971a-4347-84e8-9f62464ba76d",
-            "label": "text",
+            "type": "Image",
+            "id": "4e4c75c2-d4ef-41fe-813d-e7629c496663",
+            "label": "water",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "bg"
+            },
+            "x": 650.6666666666666,
+            "y": 276,
+            "scaleX": 0.6840277777777778,
+            "scaleY": 0.7015625,
+            "originY": 0.01687116564417178
+        },
+        {
+            "type": "Image",
+            "id": "23126225-726d-4ab7-91d9-3280ac4998aa",
+            "label": "player",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "fisherman-idle"
+            },
+            "x": 638.9688750209934,
+            "y": 289.0012601206786,
+            "scaleX": 0.72842474,
+            "scaleY": 0.72842474,
+            "originX": 0.676,
+            "originY": 0.8228228228228228
+        },
+        {
+            "type": "Image",
+            "id": "babb13a9-b99d-4008-b246-08768aaba6b8",
+            "label": "rope",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "hook-sine"
+            },
             "x": 640,
-            "y": 458,
-            "originX": 0.5,
-            "originY": 0.5,
-            "text": "Phaser 4 + Phaser Editor v5\nVite + TypeScript",
-            "align": "center",
-            "fontFamily": "Arial",
-            "fontSize": "3em"
+            "y": 289.48717830155135,
+            "scaleX": 0.675929855162,
+            "scaleY": 0.660344053,
+            "originY": 0
+        },
+        {
+            "type": "Image",
+            "id": "6f866e9e-6dec-41ce-8c7b-c4ada996e034",
+            "label": "hookLeft",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "hook-left"
+            },
+            "x": 632.9036995365968,
+            "y": 347.1169994301449,
+            "scaleX": 0.6666666666666666,
+            "scaleY": 0.6666666666666666,
+            "angle": 5,
+            "originX": 0.78125,
+            "originY": 0.146341
+        },
+        {
+            "type": "Image",
+            "id": "47b8215b-c8a4-4d7d-93b7-ca9c742b1e32",
+            "label": "hookRight",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "hook-right"
+            },
+            "x": 646.1641161388904,
+            "y": 347.01283278922745,
+            "scaleX": 0.6666666666666666,
+            "scaleY": 0.6666666666666666,
+            "angle": 355,
+            "originX": 0.171875,
+            "originY": 0.146341
         }
     ],
     "plainObjects": [],
