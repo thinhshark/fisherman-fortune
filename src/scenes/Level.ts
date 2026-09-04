@@ -6,6 +6,7 @@
 import Phaser from "phaser";
 /* START-USER-IMPORTS */
 import { HookController } from "../game/HookController";
+import { CreatureSpawner } from "../game/CreatureSpawner";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -77,14 +78,22 @@ export default class Level extends Phaser.Scene {
 	/* START-USER-CODE */
 
 	private hookController!: HookController;
+	private creatureSpawner!: CreatureSpawner;
 
 	create() {
 		this.editorCreate();
 		this.hookController = this.createHookController();
+		this.creatureSpawner = this.createCreatureSpawner();
+		this.applyDisplayDepths();
+
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			this.creatureSpawner.destroy();
+		});
 	}
 
 	update(time: number, delta: number): void {
 		this.hookController.update(time, delta);
+		this.creatureSpawner.update(time, delta);
 	}
 
 	private createHookController(): HookController {
@@ -99,6 +108,28 @@ export default class Level extends Phaser.Scene {
 		}
 
 		return new HookController(this, rope, hookLeft, hookRight);
+	}
+
+	private createCreatureSpawner(): CreatureSpawner {
+		const water = this.water;
+		if (!water) {
+			throw new Error(
+				"Level is missing required scene object: water must exist for creature spawning.",
+			);
+		}
+		return new CreatureSpawner(this, water);
+	}
+
+	/** Background < creatures < player / hook assembly. */
+	private applyDisplayDepths(): void {
+		this.gameBackground?.setDepth(0);
+		this.water?.setDepth(1);
+		this.player?.setDepth(10);
+
+		const hookParent = this.rope?.parentContainer;
+		if (hookParent) {
+			hookParent.setDepth(20);
+		}
 	}
 
 	/* END-USER-CODE */
