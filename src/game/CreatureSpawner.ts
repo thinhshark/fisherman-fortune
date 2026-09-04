@@ -6,9 +6,12 @@ import {
 	representativeValue,
 } from "./CreatureCatalog";
 
-export interface ActiveCreature {
+export interface CatchableCreature {
 	sprite: Phaser.GameObjects.Sprite;
 	definition: CreatureDefinition;
+}
+
+export interface ActiveCreature extends CatchableCreature {
 	/** +1 right, -1 left */
 	direction: 1 | -1;
 	/** Optional debug label; destroyed with the creature. */
@@ -32,6 +35,7 @@ export class CreatureSpawner {
 
 	private readonly scene: Phaser.Scene;
 	private readonly active = new Map<string, ActiveCreature>();
+	private readonly claimed = new Map<string, ActiveCreature>();
 	private spawnTimer?: Phaser.Time.TimerEvent;
 	private destroyed = false;
 	private nextNameIndex = 1;
@@ -92,6 +96,50 @@ export class CreatureSpawner {
 		return Array.from(this.active.values());
 	}
 
+	getCatchableCreatures(): readonly CatchableCreature[] {
+		const result: CatchableCreature[] = [];
+		for (const entry of this.active.values()) {
+			if (!entry.sprite.active) {
+				continue;
+			}
+			result.push({
+				sprite: entry.sprite,
+				definition: entry.definition,
+			});
+		}
+		return result;
+	}
+
+	/**
+	 * Remove a swimming creature from movement/cleanup tracking.
+	 * Returns false if it is already claimed, missing, or inactive.
+	 */
+	claimCreature(sprite: Phaser.GameObjects.Sprite): boolean {
+		if (this.destroyed || !sprite.active) {
+			return false;
+		}
+		const key = sprite.name;
+		if (this.claimed.has(key)) {
+			return false;
+		}
+		const entry = this.active.get(key);
+		if (!entry || entry.sprite !== sprite) {
+			return false;
+		}
+		this.active.delete(key);
+		this.claimed.set(key, entry);
+		return true;
+	}
+
+	destroyClaimedCreature(sprite: Phaser.GameObjects.Sprite): void {
+		const key = sprite.name;
+		const entry = this.claimed.get(key);
+		if (!entry || entry.sprite !== sprite) {
+			return;
+		}
+		this.destroyEntry(key, this.claimed);
+	}
+
 	getSpawnBounds(): Readonly<{
 		spawnTop: number;
 		spawnBottom: number;
@@ -135,7 +183,7 @@ export class CreatureSpawner {
 		}
 
 		for (const key of toDestroy) {
-			this.destroyCreature(key);
+			this.destroyEntry(key, this.active);
 		}
 	}
 
@@ -149,7 +197,10 @@ export class CreatureSpawner {
 		this.spawnTimer = undefined;
 
 		for (const key of Array.from(this.active.keys())) {
-			this.destroyCreature(key);
+			this.destroyEntry(key, this.active);
+		}
+		for (const key of Array.from(this.claimed.keys())) {
+			this.destroyEntry(key, this.claimed);
 		}
 
 		this.scene.events.off(
@@ -282,12 +333,15 @@ export class CreatureSpawner {
 		return CREATURE_CATALOG[CREATURE_CATALOG.length - 1];
 	}
 
-	private destroyCreature(key: string): void {
-		const entry = this.active.get(key);
+	private destroyEntry(
+		key: string,
+		collection: Map<string, ActiveCreature>,
+	): void {
+		const entry = collection.get(key);
 		if (!entry) {
 			return;
 		}
-		this.active.delete(key);
+		collection.delete(key);
 		entry.debugLabel?.destroy();
 		entry.sprite.destroy();
 	}

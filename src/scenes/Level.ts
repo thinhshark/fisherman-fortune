@@ -7,6 +7,7 @@ import Phaser from "phaser";
 /* START-USER-IMPORTS */
 import { HookController } from "../game/HookController";
 import { CreatureSpawner } from "../game/CreatureSpawner";
+import { CatchController } from "../game/CatchController";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -79,14 +80,17 @@ export default class Level extends Phaser.Scene {
 
 	private hookController!: HookController;
 	private creatureSpawner!: CreatureSpawner;
+	private catchController!: CatchController;
 
 	create() {
 		this.editorCreate();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
+		this.catchController = this.createCatchController();
 		this.applyDisplayDepths();
 
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			this.catchController.destroy();
 			this.creatureSpawner.destroy();
 		});
 	}
@@ -94,6 +98,7 @@ export default class Level extends Phaser.Scene {
 	update(time: number, delta: number): void {
 		this.hookController.update(time, delta);
 		this.creatureSpawner.update(time, delta);
+		this.catchController.update(time, delta);
 	}
 
 	private createHookController(): HookController {
@@ -118,6 +123,14 @@ export default class Level extends Phaser.Scene {
 			);
 		}
 		return new CreatureSpawner(this, water);
+	}
+
+	private createCatchController(): CatchController {
+		return new CatchController(
+			this,
+			this.hookController,
+			this.creatureSpawner,
+		);
 	}
 
 	/** Background < creatures < player / hook assembly. */

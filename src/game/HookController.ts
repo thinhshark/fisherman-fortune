@@ -23,6 +23,14 @@ export class HookController {
 	private static readonly CYCLE_MS = 3200;
 	private static readonly CAST_SPEED_PX_PER_SEC = 650;
 	private static readonly RETRACT_SPEED_PX_PER_SEC = 850;
+	private static readonly CAUGHT_RETRACT_MIN_PX_PER_SEC = 180;
+	private static readonly CAUGHT_RETRACT_MAX_PX_PER_SEC = 750;
+	/**
+	 * Construct CalculateDuration: (distance / 64) * ObjectWeight
+	 * ⇒ speed = 64 / ObjectWeight. Empty-hook HookWeight was 0.1 ⇒ 640 px/s.
+	 */
+	private static readonly CONSTRUCT_BASE_RETRACT_PX_PER_SEC = 64 / 0.1;
+	private static readonly HOOK_COLLISION_RADIUS = 32;
 	private static readonly BOUNDARY_MARGIN_PX = 35;
 	private static readonly CAST_ROPE_OUTER_COLOR = 0x4b2a18;
 	private static readonly CAST_ROPE_INNER_COLOR = 0xc98a32;
@@ -48,11 +56,15 @@ export class HookController {
 	private readonly hookCenterRestLocalX: number;
 	private readonly hookCenterRestLocalY: number;
 	private readonly restingHookDistance: number;
+	private readonly worldMatrix = new Phaser.GameObjects.Components.TransformMatrix();
+	private readonly hookWorld = new Phaser.Math.Vector2();
 
-	private state: HookState = "SWINGING";
+	private _state: HookState = "SWINGING";
 	private elapsedMs = 0;
 	private extension = 0;
 	private maxExtension = 0;
+	private retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
+	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
 
 	constructor(
@@ -116,12 +128,65 @@ export class HookController {
 		return { x: this.anchorX, y: this.anchorY };
 	}
 
+	get state(): HookState {
+		return this._state;
+	}
+
+	/** @deprecated Use `state`. Kept for existing call sites. */
 	get currentState(): HookState {
-		return this.state;
+		return this._state;
+	}
+
+	get isCasting(): boolean {
+		return this._state === "CASTING";
+	}
+
+	get isRetracting(): boolean {
+		return this._state === "RETRACTING";
+	}
+
+	/**
+	 * World-space center of the joined hook (not the boat-anchor pivot).
+	 * Derived from the Container world matrix and the current hook-half local center.
+	 */
+	get hookWorldPosition(): Readonly<{ x: number; y: number }> {
+		this.updateHookWorldPosition();
+		return { x: this.hookWorld.x, y: this.hookWorld.y };
+	}
+
+	get hookCollisionRadius(): number {
+		return HookController.HOOK_COLLISION_RADIUS;
 	}
 
 	get currentExtension(): number {
 		return this.extension;
+	}
+
+	/**
+	 * Subscribe to retraction finishing at the resting pose (empty or loaded).
+	 * Fired once when RETRACTING reaches extension 0 and the hook returns to SWINGING.
+	 */
+	onRetractComplete(listener: () => void): void {
+		this.retractCompleteListeners.add(listener);
+	}
+
+	offRetractComplete(listener: () => void): void {
+		this.retractCompleteListeners.delete(listener);
+	}
+
+	/**
+	 * Interrupt CASTING and start RETRACTING immediately, keeping the current
+	 * extension and frozen swing angle. Only succeeds while CASTING.
+	 *
+	 * `weight` is the spreadsheet Weight ordinal: Light=1, Medium=2, Heavy=3.
+	 */
+	beginRetractingWithCatch(weight: number): boolean {
+		if (this._state !== "CASTING") {
+			return false;
+		}
+		this.retractSpeed = HookController.caughtRetractSpeed(weight);
+		this._state = "RETRACTING";
+		return true;
 	}
 
 	/** Max safe cast length for a given container angle (degrees). */
@@ -130,7 +195,7 @@ export class HookController {
 	}
 
 	update(_time: number, delta: number): void {
-		switch (this.state) {
+		switch (this._state) {
 			case "SWINGING":
 				this.updateSwinging(delta);
 				break;
@@ -163,10 +228,11 @@ export class HookController {
 		this.scene.input.keyboard?.removeCapture(
 			Phaser.Input.Keyboard.KeyCodes.SPACE,
 		);
+		this.retractCompleteListeners.clear();
 	}
 
 	private handleCastInput(): void {
-		if (this.state !== "SWINGING") {
+		if (this._state !== "SWINGING") {
 			return;
 		}
 		this.beginCasting();
@@ -178,7 +244,8 @@ export class HookController {
 			this.hookContainer.rotation,
 		);
 		this.extension = 0;
-		this.state = "CASTING";
+		this.retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
+		this._state = "CASTING";
 		this.applyExtension();
 	}
 
@@ -199,7 +266,8 @@ export class HookController {
 		if (this.extension >= this.maxExtension) {
 			this.extension = this.maxExtension;
 			this.applyExtension();
-			this.state = "RETRACTING";
+			this.retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
+			this._state = "RETRACTING";
 			return;
 		}
 
@@ -208,14 +276,15 @@ export class HookController {
 
 	private updateRetracting(delta: number): void {
 		const deltaSec = delta / 1000;
-		this.extension -=
-			HookController.RETRACT_SPEED_PX_PER_SEC * deltaSec;
+		this.extension -= this.retractSpeed * deltaSec;
 
 		if (this.extension <= 0) {
 			this.extension = 0;
 			this.applyExtension();
 			this.restoreRestingLocalPositions();
-			this.state = "SWINGING";
+			this.retractSpeed = HookController.RETRACT_SPEED_PX_PER_SEC;
+			this._state = "SWINGING";
+			this.notifyRetractComplete();
 			return;
 		}
 
@@ -277,6 +346,39 @@ export class HookController {
 		this.hookLeft.setPosition(this.hookLeftLocalX, this.hookLeftLocalY);
 		this.hookRight.setPosition(this.hookRightLocalX, this.hookRightLocalY);
 		this.redrawCastRope(0);
+	}
+
+	private updateHookWorldPosition(): void {
+		const localX = (this.hookLeft.x + this.hookRight.x) * 0.5;
+		const localY = (this.hookLeft.y + this.hookRight.y) * 0.5;
+		this.hookContainer
+			.getWorldTransformMatrix(this.worldMatrix)
+			.transformPoint(localX, localY, this.hookWorld);
+	}
+
+	/**
+	 * Spreadsheet Weight is Light/Medium/Heavy (ordinal 1/2/3). Construct's
+	 * live fish-catch tween used `fishes.Width / back_speed` (duration, not a
+	 * constant px/s), so it cannot be reused here. Map ordinals onto the
+	 * Construct empty-hook HookWeight scale (0.1) and invert CalculateDuration:
+	 * speed = 64 / (0.1 * ordinal) = 640 / ordinal, then clamp to 180–750.
+	 * Heavier Weight ⇒ lower speed. Empty retract stays 850.
+	 */
+	private static caughtRetractSpeed(weight: number): number {
+		const ordinal = Math.max(weight, 1);
+		const speed =
+			HookController.CONSTRUCT_BASE_RETRACT_PX_PER_SEC / ordinal;
+		return Phaser.Math.Clamp(
+			speed,
+			HookController.CAUGHT_RETRACT_MIN_PX_PER_SEC,
+			HookController.CAUGHT_RETRACT_MAX_PX_PER_SEC,
+		);
+	}
+
+	private notifyRetractComplete(): void {
+		for (const listener of Array.from(this.retractCompleteListeners)) {
+			listener();
+		}
 	}
 
 	/**
