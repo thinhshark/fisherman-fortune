@@ -15,6 +15,7 @@ import { HudController } from "../game/HudController";
 import { ItemSpawner } from "../game/ItemSpawner";
 import { AudioController } from "../game/AudioController";
 import { PauseController } from "../game/PauseController";
+import { FlutterGameBridge } from "../game/FlutterGameBridge";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -185,6 +186,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private handlePauseRestart(): void {
+		FlutterGameBridge.sendRestartGame(this.gameSession.gameSessionId);
 		// SHUTDOWN destroys PauseController without resuming old audio.
 		this.scene.restart();
 	}

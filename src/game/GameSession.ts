@@ -55,6 +55,7 @@ export interface BonusCollectedPayload {
 
 export interface GameFinishedPayload {
 	finalScore: number;
+	gameSessionId: string;
 }
 
 /**
@@ -79,9 +80,11 @@ export class GameSession {
 	private destroyed = false;
 	private finishedEmitted = false;
 	private endingEmitted = false;
+	private readonly _gameSessionId: string;
 
 	constructor(scene: Phaser.Scene) {
 		this.scene = scene;
+		this._gameSessionId = createGameSessionId();
 		scene.events.on(CREATURE_DELIVERED_EVENT, this.boundCreatureDelivered);
 		scene.events.on(ITEM_DELIVERED_EVENT, this.boundItemDelivered);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
@@ -89,6 +92,11 @@ export class GameSession {
 
 	get score(): number {
 		return this._score;
+	}
+
+	/** Unique id for this Level round (new on each scene create / restart). */
+	get gameSessionId(): string {
+		return this._gameSessionId;
 	}
 
 	get remainingSeconds(): number {
@@ -317,6 +325,21 @@ export class GameSession {
 		this.finishedEmitted = true;
 		this.scene.events.emit(GAME_FINISHED_EVENT, {
 			finalScore: this._score,
+			gameSessionId: this._gameSessionId,
 		} satisfies GameFinishedPayload);
 	}
+}
+
+function createGameSessionId(): string {
+	try {
+		const cryptoObj = globalThis.crypto as
+			| { randomUUID?: () => string }
+			| undefined;
+		if (cryptoObj && typeof cryptoObj.randomUUID === "function") {
+			return cryptoObj.randomUUID();
+		}
+	} catch {
+		/* fall through */
+	}
+	return `ff-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }

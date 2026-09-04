@@ -198,7 +198,10 @@ export class AudioController {
 
 	/** Called from GameOverController as a redundant safe trigger. */
 	playResultGameOver(): void {
-		this.handleGameFinished({ finalScore: 0 });
+		this.handleGameFinished({
+			finalScore: 0,
+			gameSessionId: "audio-result-trigger",
+		});
 	}
 
 	destroy(): void {
