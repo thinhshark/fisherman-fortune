@@ -10,6 +10,7 @@ import { CreatureSpawner } from "../game/CreatureSpawner";
 import { CatchController } from "../game/CatchController";
 import { GameSession } from "../game/GameSession";
 import { HudController } from "../game/HudController";
+import { ItemSpawner } from "../game/ItemSpawner";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -85,9 +86,11 @@ export default class Level extends Phaser.Scene {
 	private catchController!: CatchController;
 	private gameSession!: GameSession;
 	private hudController!: HudController;
+	private itemSpawner!: ItemSpawner;
 
 	create() {
 		this.editorCreate();
+		this.itemSpawner = this.createItemSpawner();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
 		this.catchController = this.createCatchController();
@@ -100,6 +103,7 @@ export default class Level extends Phaser.Scene {
 			this.gameSession.destroy();
 			this.catchController.destroy();
 			this.creatureSpawner.destroy();
+			this.itemSpawner.destroy();
 		});
 	}
 
@@ -108,6 +112,7 @@ export default class Level extends Phaser.Scene {
 		this.creatureSpawner.update(time, delta);
 		this.catchController.update(time, delta);
 		this.gameSession.update(time, delta);
+		this.itemSpawner.update(time, delta);
 	}
 
 	private createHookController(): HookController {
@@ -134,6 +139,19 @@ export default class Level extends Phaser.Scene {
 		return new CreatureSpawner(this, water);
 	}
 
+	private createItemSpawner(): ItemSpawner {
+		const water = this.water;
+		if (!water) {
+			throw new Error(
+				"Level is missing required scene object: water must exist for item spawning.",
+			);
+		}
+		const boatAnchor = this.rope
+			? { x: this.rope.x, y: this.rope.y }
+			: { x: this.player?.x ?? this.scale.width * 0.5, y: water.y };
+		return new ItemSpawner(this, water, boatAnchor);
+	}
+
 	private createCatchController(): CatchController {
 		return new CatchController(
 			this,
@@ -142,7 +160,7 @@ export default class Level extends Phaser.Scene {
 		);
 	}
 
-	/** Background < creatures < player / hook assembly. HUD is depth 1000. */
+	/** Background < items < creatures < player / hook assembly. HUD is depth 1000. */
 	private applyDisplayDepths(): void {
 		this.gameBackground?.setDepth(0);
 		this.water?.setDepth(1);
