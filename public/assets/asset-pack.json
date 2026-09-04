@@ -2,9 +2,94 @@
     "section1": {
         "files": [
             {
+                "url": "assets/images/backgrounds/background-jungle.jpg",
+                "type": "image",
+                "key": "background-jungle"
+            },
+            {
+                "url": "assets/images/player/boat.png",
+                "type": "image",
+                "key": "boat"
+            },
+            {
+                "url": "assets/animations/creature-animations.json",
+                "type": "animation",
+                "key": "creature-animations"
+            },
+            {
                 "url": "assets/FufuSuperDino.png",
                 "type": "image",
                 "key": "FufuSuperDino"
+            },
+            {
+                "url": "assets/images/hook/hook-left.png",
+                "type": "image",
+                "key": "hook-left"
+            },
+            {
+                "url": "assets/images/hook/hook-right.png",
+                "type": "image",
+                "key": "hook-right"
+            },
+            {
+                "url": "assets/images/hook/hook-sine.png",
+                "type": "image",
+                "key": "hook-sine"
+            },
+            {
+                "url": "assets/images/hook/rope.png",
+                "type": "image",
+                "key": "rope"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-001.png",
+                "type": "image",
+                "key": "small-fish-01-swim-001"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-002.png",
+                "type": "image",
+                "key": "small-fish-01-swim-002"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-003.png",
+                "type": "image",
+                "key": "small-fish-01-swim-003"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-004.png",
+                "type": "image",
+                "key": "small-fish-01-swim-004"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-005.png",
+                "type": "image",
+                "key": "small-fish-01-swim-005"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-006.png",
+                "type": "image",
+                "key": "small-fish-01-swim-006"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-007.png",
+                "type": "image",
+                "key": "small-fish-01-swim-007"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-008.png",
+                "type": "image",
+                "key": "small-fish-01-swim-008"
+            },
+            {
+                "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-009.png",
+                "type": "image",
+                "key": "small-fish-01-swim-009"
+            },
+            {
+                "url": "assets/images/backgrounds/water.png",
+                "type": "image",
+                "key": "water"
             }
         ]
     },
@@ -12,6 +97,8 @@
         "app": "Phaser Editor 2D - Asset Pack Editor",
         "contentType": "phasereditor2d.pack.core.AssetContentType",
         "url": "https://phasereditor2d.com",
-        "version": 2
+        "version": 2,
+        "showAllFilesInBlocks": false,
+        "visible": true
     }
 }
