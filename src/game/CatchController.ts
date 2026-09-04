@@ -1,6 +1,16 @@
 import Phaser from "phaser";
 import type { CreatureCategory, CreatureWeight } from "./CreatureCatalog";
 import type { CatchableCreature, CreatureSpawner } from "./CreatureSpawner";
+import type {
+	ItemEffectType,
+	ItemWeight,
+	RewardOperation,
+} from "./ItemCatalog";
+import type {
+	CatchableItem,
+	ItemGameObject,
+	ItemSpawner,
+} from "./ItemSpawner";
 import { type HookController } from "./HookController";
 
 /** Dev-only: stroke the hook collision circle and catchable bounds. */
@@ -10,6 +20,7 @@ const SHOW_CATCH_DEBUG = false;
 const CAUGHT_DEPTH = 15;
 
 export const CREATURE_DELIVERED_EVENT = "creature-delivered";
+export const ITEM_DELIVERED_EVENT = "item-delivered";
 
 export interface CreatureDeliveredPayload {
 	id: string;
@@ -19,18 +30,54 @@ export interface CreatureDeliveredPayload {
 	isToxic: boolean;
 }
 
+export interface ItemDeliveredPayload {
+	id: string;
+	rewardMin: number;
+	rewardMax: number;
+	rewardOperation: RewardOperation;
+	effectType: ItemEffectType;
+	timeBonusSeconds: number;
+	weight: ItemWeight;
+	retractSpeed: number;
+}
+
+type CaughtTarget =
+	| {
+			kind: "creature";
+			sprite: CatchableCreature["sprite"];
+			definition: CatchableCreature["definition"];
+	  }
+	| {
+			kind: "item";
+			object: ItemGameObject;
+			definition: CatchableItem["definition"];
+	  };
+
+type CatchCandidate =
+	| {
+			kind: "creature";
+			candidate: CatchableCreature;
+			distSq: number;
+	  }
+	| {
+			kind: "item";
+			candidate: CatchableItem;
+			distSq: number;
+	  };
+
 /**
- * Geometry-based hook catching. Does not parent creatures into the hook Container
- * and does not award score.
+ * Geometry-based hook catching for creatures and stationary items.
+ * Does not parent targets into the hook Container and does not award score.
  */
 export class CatchController {
 	private readonly scene: Phaser.Scene;
 	private readonly hook: HookController;
-	private readonly spawner: CreatureSpawner;
+	private readonly creatureSpawner: CreatureSpawner;
+	private readonly itemSpawner: ItemSpawner;
 	private readonly hookCircle = new Phaser.Geom.Circle();
 	private readonly boundHandler = this.handleRetractComplete.bind(this);
 
-	private caught?: CatchableCreature;
+	private caught?: CaughtTarget;
 	private delivered = false;
 	private destroyed = false;
 	private readonly debugGraphics?: Phaser.GameObjects.Graphics;
@@ -38,11 +85,13 @@ export class CatchController {
 	constructor(
 		scene: Phaser.Scene,
 		hook: HookController,
-		spawner: CreatureSpawner,
+		creatureSpawner: CreatureSpawner,
+		itemSpawner: ItemSpawner,
 	) {
 		this.scene = scene;
 		this.hook = hook;
-		this.spawner = spawner;
+		this.creatureSpawner = creatureSpawner;
+		this.itemSpawner = itemSpawner;
 
 		if (SHOW_CATCH_DEBUG) {
 			this.debugGraphics = scene.add.graphics();
@@ -78,10 +127,10 @@ export class CatchController {
 
 		this.hook.offRetractComplete(this.boundHandler);
 
-		if (this.caught?.sprite.active) {
-			this.spawner.destroyClaimedCreature(this.caught.sprite);
+		if (this.caught) {
+			this.destroyCaughtTarget(this.caught);
+			this.caught = undefined;
 		}
-		this.caught = undefined;
 
 		this.debugGraphics?.destroy();
 
@@ -93,6 +142,10 @@ export class CatchController {
 	}
 
 	private tryCatch(): void {
+		if (this.caught) {
+			return;
+		}
+
 		const hookPos = this.hook.hookWorldPosition;
 		this.hookCircle.setTo(
 			hookPos.x,
@@ -100,11 +153,10 @@ export class CatchController {
 			this.hook.hookCollisionRadius,
 		);
 
-		let best: CatchableCreature | undefined;
-		let bestDistSq = Number.POSITIVE_INFINITY;
+		let best: CatchCandidate | undefined;
 
-		for (const candidate of this.spawner.getCatchableCreatures()) {
-			const bounds = candidate.sprite.getBounds();
+		for (const creature of this.creatureSpawner.getCatchableCreatures()) {
+			const bounds = creature.sprite.getBounds();
 			if (
 				!Phaser.Geom.Intersects.CircleToRectangle(
 					this.hookCircle,
@@ -113,13 +165,29 @@ export class CatchController {
 			) {
 				continue;
 			}
-
-			const dx = candidate.sprite.x - hookPos.x;
-			const dy = candidate.sprite.y - hookPos.y;
+			const dx = creature.sprite.x - hookPos.x;
+			const dy = creature.sprite.y - hookPos.y;
 			const distSq = dx * dx + dy * dy;
-			if (distSq < bestDistSq) {
-				bestDistSq = distSq;
-				best = candidate;
+			if (!best || distSq < best.distSq) {
+				best = { kind: "creature", candidate: creature, distSq };
+			}
+		}
+
+		for (const item of this.itemSpawner.getCatchableItems()) {
+			const bounds = item.object.getBounds();
+			if (
+				!Phaser.Geom.Intersects.CircleToRectangle(
+					this.hookCircle,
+					bounds,
+				)
+			) {
+				continue;
+			}
+			const dx = item.object.x - hookPos.x;
+			const dy = item.object.y - hookPos.y;
+			const distSq = dx * dx + dy * dy;
+			if (!best || distSq < best.distSq) {
+				best = { kind: "item", candidate: item, distSq };
 			}
 		}
 
@@ -127,7 +195,15 @@ export class CatchController {
 			return;
 		}
 
-		if (!this.spawner.claimCreature(best.sprite)) {
+		if (best.kind === "creature") {
+			this.catchCreature(best.candidate);
+		} else {
+			this.catchItem(best.candidate);
+		}
+	}
+
+	private catchCreature(best: CatchableCreature): void {
+		if (!this.creatureSpawner.claimCreature(best.sprite)) {
 			return;
 		}
 
@@ -140,22 +216,65 @@ export class CatchController {
 				weight,
 			})
 		) {
-			this.spawner.destroyClaimedCreature(best.sprite);
+			this.creatureSpawner.destroyClaimedCreature(best.sprite);
 			return;
 		}
 
-		this.caught = best;
+		this.caught = {
+			kind: "creature",
+			sprite: best.sprite,
+			definition: best.definition,
+		};
 		this.delivered = false;
 		best.sprite.setDepth(CAUGHT_DEPTH);
 	}
 
-	private attachCaught(): void {
-		const caught = this.caught;
-		if (!caught || !caught.sprite.active) {
+	private catchItem(best: CatchableItem): void {
+		if (!this.itemSpawner.claimItem(best)) {
 			return;
 		}
+
+		const retractSpeed = best.definition.retractSpeed;
+		if (
+			!this.hook.beginRetractingWithCatch(retractSpeed, {
+				itemId: best.definition.id,
+				weight: best.definition.weight,
+			})
+		) {
+			this.itemSpawner.destroyClaimedItem(best);
+			return;
+		}
+
+		this.caught = {
+			kind: "item",
+			object: best.object,
+			definition: best.definition,
+		};
+		this.delivered = false;
+		best.object.setDepth(CAUGHT_DEPTH);
+		// Keep valuable (and any sprite) animation playing while attached.
+	}
+
+	private attachCaught(): void {
+		const caught = this.caught;
+		if (!caught) {
+			return;
+		}
+
 		const hookPos = this.hook.hookAttachWorldPosition;
-		caught.sprite.setPosition(hookPos.x, hookPos.y);
+
+		if (caught.kind === "creature") {
+			if (!caught.sprite.active) {
+				return;
+			}
+			caught.sprite.setPosition(hookPos.x, hookPos.y);
+			return;
+		}
+
+		if (!caught.object.active) {
+			return;
+		}
+		caught.object.setPosition(hookPos.x, hookPos.y);
 	}
 
 	private handleRetractComplete(): void {
@@ -163,19 +282,50 @@ export class CatchController {
 			return;
 		}
 
-		const { sprite, definition } = this.caught;
-		const payload: CreatureDeliveredPayload = {
-			id: definition.id,
-			category: definition.category,
-			value: Number(sprite.getData("value") ?? 0),
-			weight: definition.weight,
-			isToxic: definition.isToxic,
-		};
-
+		const target = this.caught;
 		this.delivered = true;
 		this.caught = undefined;
-		this.spawner.destroyClaimedCreature(sprite);
-		this.scene.events.emit(CREATURE_DELIVERED_EVENT, payload);
+
+		if (target.kind === "creature") {
+			const { sprite, definition } = target;
+			const payload: CreatureDeliveredPayload = {
+				id: definition.id,
+				category: definition.category,
+				value: Number(sprite.getData("value") ?? 0),
+				weight: definition.weight,
+				isToxic: definition.isToxic,
+			};
+			this.creatureSpawner.destroyClaimedCreature(sprite);
+			this.scene.events.emit(CREATURE_DELIVERED_EVENT, payload);
+			return;
+		}
+
+		const { object, definition } = target;
+		const payload: ItemDeliveredPayload = {
+			id: definition.id,
+			rewardMin: definition.rewardMin,
+			rewardMax: definition.rewardMax,
+			rewardOperation: definition.rewardOperation,
+			effectType: definition.effectType,
+			timeBonusSeconds: definition.timeBonusSeconds,
+			weight: definition.weight,
+			retractSpeed: definition.retractSpeed,
+		};
+		this.itemSpawner.destroyClaimedItem(object);
+		this.scene.events.emit(ITEM_DELIVERED_EVENT, payload);
+		this.itemSpawner.refillMissingItems();
+	}
+
+	private destroyCaughtTarget(target: CaughtTarget): void {
+		if (target.kind === "creature") {
+			if (target.sprite.active) {
+				this.creatureSpawner.destroyClaimedCreature(target.sprite);
+			}
+			return;
+		}
+		if (target.object.active) {
+			this.itemSpawner.destroyClaimedItem(target.object);
+		}
 	}
 
 	private drawDebug(): void {
@@ -199,8 +349,19 @@ export class CatchController {
 		}
 
 		graphics.lineStyle(1, 0x00ff88, 0.7);
-		for (const candidate of this.spawner.getCatchableCreatures()) {
+		for (const candidate of this.creatureSpawner.getCatchableCreatures()) {
 			const bounds = candidate.sprite.getBounds();
+			graphics.strokeRect(
+				bounds.x,
+				bounds.y,
+				bounds.width,
+				bounds.height,
+			);
+		}
+
+		graphics.lineStyle(1, 0xff88ff, 0.7);
+		for (const candidate of this.itemSpawner.getCatchableItems()) {
+			const bounds = candidate.object.getBounds();
 			graphics.strokeRect(
 				bounds.x,
 				bounds.y,

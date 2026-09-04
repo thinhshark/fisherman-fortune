@@ -263,6 +263,7 @@ export class ItemSpawner {
 		object.setData("weight", definition.weight);
 		object.setData("retractSpeed", definition.retractSpeed);
 		object.setData("effectType", definition.effectType);
+		object.setData("timeBonusSeconds", definition.timeBonusSeconds);
 
 		if (
 			definition.animationKey &&

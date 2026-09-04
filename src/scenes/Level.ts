@@ -94,7 +94,12 @@ export default class Level extends Phaser.Scene {
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
 		this.catchController = this.createCatchController();
-		this.gameSession = new GameSession(this);
+		this.gameSession = new GameSession(this, {
+			feedbackAnchor: {
+				x: this.rope?.x ?? this.scale.width * 0.5,
+				y: this.rope?.y ?? 289,
+			},
+		});
 		this.hudController = new HudController(this);
 		this.applyDisplayDepths();
 
@@ -110,9 +115,9 @@ export default class Level extends Phaser.Scene {
 	update(time: number, delta: number): void {
 		this.hookController.update(time, delta);
 		this.creatureSpawner.update(time, delta);
+		this.itemSpawner.update(time, delta);
 		this.catchController.update(time, delta);
 		this.gameSession.update(time, delta);
-		this.itemSpawner.update(time, delta);
 	}
 
 	private createHookController(): HookController {
@@ -157,6 +162,7 @@ export default class Level extends Phaser.Scene {
 			this,
 			this.hookController,
 			this.creatureSpawner,
+			this.itemSpawner,
 		);
 	}
 

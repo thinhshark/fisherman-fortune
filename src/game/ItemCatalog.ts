@@ -26,12 +26,13 @@ export interface ItemDefinition {
 	rewardMin: number;
 	rewardMax: number;
 	rewardOperation: RewardOperation;
+	effectType: ItemEffectType;
+	timeBonusSeconds: number;
 	weight: ItemWeight;
 	retractSpeed: number;
 	spawnWeight: number;
 	spawnZones: readonly SpawnZoneLabel[];
 	displayScale: number;
-	effectType: ItemEffectType;
 }
 
 function fromBalance(balance: ItemBalanceEntry): ItemDefinition {
@@ -42,12 +43,13 @@ function fromBalance(balance: ItemBalanceEntry): ItemDefinition {
 		rewardMin: balance.rewardMin,
 		rewardMax: balance.rewardMax,
 		rewardOperation: balance.rewardOperation,
+		effectType: balance.effectType,
+		timeBonusSeconds: balance.timeBonusSeconds,
 		weight: balance.weight,
 		retractSpeed: balance.retractSpeed,
 		spawnWeight: balance.spawnWeight,
 		spawnZones: balance.spawnZones,
 		displayScale: balance.displayScale,
-		effectType: balance.effectType,
 	};
 }
 

@@ -2,16 +2,20 @@
  * Per-item gameplay balance — chỉnh từng vật phẩm tại đây.
  *
  * - rewardMin/rewardMax: khoảng điểm
+ * - rewardOperation: add | subtract
+ * - effectType: scrap | gem | valuable | time | bomb | power
+ * - timeBonusSeconds: cộng giây (0 nếu không phải time item)
  * - retractSpeed: tốc độ kéo lên; số càng nhỏ càng nặng/chậm
  * - spawnWeight: xác suất xuất hiện tương đối
  * - displayScale: kích thước hiển thị
- * - effectType: hiệu ứng khi bắt (scrap / gem / valuable / bomb / power)
  *
  * Mỗi entry được viết tường minh (không generate runtime).
  *
  * Nguồn:
  * - Google Sheet tab "Others"
  * - Construct layouts/objectTypes (Reward instance vars, world sizes)
+ *
+ * Pending effects (emit bonus-collected only): bomb, power.
  */
 
 export type ItemWeight = "Very Light" | "Light" | "Medium" | "Heavy";
@@ -21,6 +25,7 @@ export type ItemEffectType =
 	| "scrap"
 	| "gem"
 	| "valuable"
+	| "time"
 	| "bomb"
 	| "power";
 
@@ -32,12 +37,14 @@ export interface ItemBalanceEntry {
 	rewardMin: number;
 	rewardMax: number;
 	rewardOperation: RewardOperation;
+	effectType: ItemEffectType;
+	/** Seconds added on delivery; 0 when unused. */
+	timeBonusSeconds: number;
 	weight: ItemWeight;
 	retractSpeed: number;
 	spawnWeight: number;
 	spawnZones: readonly SpawnZoneLabel[];
 	displayScale: number;
-	effectType: ItemEffectType;
 }
 
 /** Construct 1920 → Phaser 1280 uniform scale for 1:1 source art. */
@@ -62,12 +69,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 6,
 		rewardMax: 6,
 		rewardOperation: "add",
+		effectType: "scrap",
+		timeBonusSeconds: 0,
 		weight: "Very Light",
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5, // sheet Frequency: each 30s
 		spawnZones: ["Upper", "Middle"],
 		displayScale: SCALE_NATIVE,
-		effectType: "scrap",
 	},
 	{
 		id: "barrel",
@@ -77,12 +85,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 2,
 		rewardMax: 2,
 		rewardOperation: "add",
+		effectType: "scrap",
+		timeBonusSeconds: 0,
 		weight: "Very Light",
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
 		displayScale: SCALE_NATIVE,
-		effectType: "scrap",
 	},
 	{
 		id: "bone",
@@ -92,12 +101,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 1,
 		rewardOperation: "add",
+		effectType: "scrap",
+		timeBonusSeconds: 0,
 		weight: "Very Light",
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
 		displayScale: SCALE_NATIVE,
-		effectType: "scrap",
 	},
 	{
 		id: "skull",
@@ -107,12 +117,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 3,
 		rewardMax: 3,
 		rewardOperation: "add",
+		effectType: "scrap",
+		timeBonusSeconds: 0,
 		weight: "Very Light",
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
 		displayScale: SCALE_SKULL,
-		effectType: "scrap",
 	},
 
 	// --- Gems (sheet Others values + zones; Construct Reward noted where different) ---
@@ -124,12 +135,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 300,
 		rewardMax: 300,
 		rewardOperation: "add",
+		effectType: "gem",
+		timeBonusSeconds: 0,
 		weight: "Light",
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 3, // sheet: spawn 1 item each 30s
 		spawnZones: ["Middle", "Lower"],
 		displayScale: SCALE_NATIVE,
-		effectType: "gem",
 	},
 	{
 		id: "emerald",
@@ -139,12 +151,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 400,
 		rewardMax: 400,
 		rewardOperation: "add",
+		effectType: "gem",
+		timeBonusSeconds: 0,
 		weight: "Light",
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 2, // TEMP relative: sheet Frequency blank (same gem group as diamond)
 		spawnZones: ["Middle", "Lower"],
 		displayScale: SCALE_NATIVE,
-		effectType: "gem",
 	},
 	{
 		id: "ruby",
@@ -154,27 +167,29 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 500,
 		rewardMax: 500,
 		rewardOperation: "add",
+		effectType: "gem",
+		timeBonusSeconds: 0,
 		weight: "Light",
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 2, // TEMP relative: sheet Frequency blank
 		spawnZones: ["Middle", "Lower"],
 		displayScale: SCALE_NATIVE,
-		effectType: "gem",
 	},
 	{
 		id: "star",
 		textureKey: "star",
 		animationKey: null,
-		// TEMP: sheet Value ($) blank for Star.
-		rewardMin: 50,
-		rewardMax: 100,
+		// TEMP: sheet Value ($) blank — treated as time bonus item (+10s).
+		rewardMin: 0,
+		rewardMax: 0,
 		rewardOperation: "add",
+		effectType: "time",
+		timeBonusSeconds: 10,
 		weight: "Very Light",
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 3, // sheet: each 45s
 		spawnZones: ["Middle", "Lower"],
 		displayScale: SCALE_NATIVE,
-		effectType: "gem",
 	},
 	{
 		id: "valuable",
@@ -184,45 +199,48 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		rewardMin: 1000,
 		rewardMax: 1000,
 		rewardOperation: "add",
+		effectType: "valuable",
+		timeBonusSeconds: 0,
 		weight: "Light",
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 1, // sheet: rare
 		spawnZones: ["Lower"],
 		// TEMP: source frames are 7–18px; scale up so the sparkle is visible underwater.
 		displayScale: 3,
-		effectType: "valuable",
 	},
 
-	// --- Bonuses (not listed on Others sheet; Construct Bonus_Bomb / Bonus_Power) ---
+	// --- Bonuses (PENDING gameplay; emit bonus-collected only) ---
 	{
 		id: "bonus-bomb",
 		textureKey: "bonus-bomb",
 		animationKey: null,
-		// TEMP: no sheet Value; scoring deferred to bomb effect.
+		// TEMP / PENDING: bomb effect not implemented yet.
 		rewardMin: 0,
 		rewardMax: 0,
 		rewardOperation: "add",
+		effectType: "bomb",
+		timeBonusSeconds: 0,
 		weight: "Light",
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 1, // TEMP rare
 		spawnZones: ["Middle", "Lower"], // TEMP: not on sheet
 		displayScale: SCALE_NATIVE,
-		effectType: "bomb",
 	},
 	{
 		id: "bonus-power",
 		textureKey: "bonus-power",
 		animationKey: null,
-		// TEMP: no sheet Value; scoring deferred to power effect.
+		// TEMP / PENDING: power effect not implemented yet.
 		rewardMin: 0,
 		rewardMax: 0,
 		rewardOperation: "add",
+		effectType: "power",
+		timeBonusSeconds: 0,
 		weight: "Light",
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 1, // TEMP rare
 		spawnZones: ["Middle", "Lower"], // TEMP: not on sheet
 		displayScale: SCALE_NATIVE,
-		effectType: "power",
 	},
 ];
 
@@ -239,6 +257,15 @@ if (ITEM_BALANCE.length !== 11) {
 			throw new Error(`Duplicate ItemBalance id: ${entry.id}`);
 		}
 		ids.add(entry.id);
+		if (
+			typeof entry.timeBonusSeconds !== "number" ||
+			!Number.isFinite(entry.timeBonusSeconds) ||
+			entry.timeBonusSeconds < 0
+		) {
+			throw new Error(
+				`${entry.id} timeBonusSeconds must be a finite number >= 0`,
+			);
+		}
 	}
 }
 

@@ -95,8 +95,10 @@ interface CapturedImageTransform {
 
 export interface RetractionStartInfo {
 	creatureId?: string;
+	itemId?: string;
 	category?: CreatureCategory;
-	weight?: CreatureWeight;
+	/** Creature or item weight label (for debug logs only). */
+	weight?: string;
 }
 
 /**
@@ -329,6 +331,7 @@ export class HookController {
 		this.setState("RETRACTING");
 		this.logRetractionStart({
 			creatureId: info?.creatureId,
+			itemId: info?.itemId,
 			category: info?.category,
 			weight: info?.weight,
 		});
@@ -603,6 +606,7 @@ export class HookController {
 		const selectedRetractSpeed = this.currentRetractSpeed;
 		console.info("[retraction]", {
 			creatureId: info.creatureId,
+			itemId: info.itemId,
 			category: info.category,
 			weight: info.weight,
 			retractReason: this.retractReason,
