@@ -5,6 +5,7 @@
 
 import Phaser from "phaser";
 /* START-USER-IMPORTS */
+import { HookController } from "../game/HookController";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -75,11 +76,29 @@ export default class Level extends Phaser.Scene {
 
 	/* START-USER-CODE */
 
-	// Write your code here
+	private hookController!: HookController;
 
 	create() {
-
 		this.editorCreate();
+		this.hookController = this.createHookController();
+	}
+
+	update(time: number, delta: number): void {
+		this.hookController.update(time, delta);
+	}
+
+	private createHookController(): HookController {
+		const rope = this.rope;
+		const hookLeft = this.hookLeft;
+		const hookRight = this.hookRight;
+
+		if (!rope || !hookLeft || !hookRight) {
+			throw new Error(
+				"Level is missing required hook assembly objects: rope, hookLeft, and hookRight must exist.",
+			);
+		}
+
+		return new HookController(this, rope, hookLeft, hookRight);
 	}
 
 	/* END-USER-CODE */
