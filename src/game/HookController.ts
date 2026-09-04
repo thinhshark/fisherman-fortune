@@ -171,8 +171,10 @@ export class HookController {
 	private retractReason: RetractReason = "empty";
 	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
-	private inputEnabled = true;
-	private paused = false;
+	/** Cast input starts disabled until Home → Play. */
+	private inputEnabled = false;
+	/** Frozen at rest until gameplay begins (also used by Pause). */
+	private paused = true;
 	/** Metadata attached to the next RETRACTING state-changed emit. */
 	private pendingRetractInfo?: {
 		retractReason: RetractReason;
@@ -297,6 +299,14 @@ export class HookController {
 			return;
 		}
 		this.paused = paused;
+	}
+
+	/**
+	 * Home → Play: unfreeze idle swing and enable cast input.
+	 */
+	beginGameplay(): void {
+		this.paused = false;
+		this.inputEnabled = true;
 	}
 
 	/**

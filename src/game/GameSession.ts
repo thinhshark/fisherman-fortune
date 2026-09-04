@@ -14,12 +14,14 @@ export const SCORE_CHANGED_EVENT = "score-changed";
 export const TIME_CHANGED_EVENT = "time-changed";
 export const TIME_BONUS_EVENT = "time-bonus";
 export const BONUS_COLLECTED_EVENT = "bonus-collected";
+/** Home → Play; gameplay systems become active. */
+export const GAMEPLAY_STARTED_EVENT = "gameplay-started";
 /** Timer hit zero; gameplay is winding down (no new casts). */
 export const GAME_ENDING_EVENT = "game-ending";
 /** Hook is safely at rest; show result overlay. */
 export const GAME_FINISHED_EVENT = "game-finished";
 
-export type GameSessionState = "playing" | "ending" | "finished";
+export type GameSessionState = "ready" | "playing" | "ending" | "finished";
 export type ScoreSourceKind = "creature" | "item";
 
 export interface ScoreChangedPayload {
@@ -58,11 +60,16 @@ export interface GameFinishedPayload {
 	gameSessionId: string;
 }
 
+export interface GameplayStartedPayload {
+	gameSessionId: string;
+	durationSeconds: number;
+}
+
 /**
  * Round session: score + countdown.
  * Floating reward / time text is owned exclusively by CatchFeedbackController.
  *
- * States: playing → ending (timer 0) → finished (hook at rest).
+ * States: ready → playing → ending (timer 0) → finished (hook at rest).
  */
 export class GameSession {
 	static readonly DURATION_SECONDS = 100;
@@ -75,11 +82,12 @@ export class GameSession {
 	private _score = 0;
 	private remainingMs = GameSession.DURATION_SECONDS * 1000;
 	private lastEmittedSeconds = GameSession.DURATION_SECONDS;
-	private _state: GameSessionState = "playing";
+	private _state: GameSessionState = "ready";
 	private paused = false;
 	private destroyed = false;
 	private finishedEmitted = false;
 	private endingEmitted = false;
+	private startedEmitted = false;
 	private readonly _gameSessionId: string;
 
 	constructor(scene: Phaser.Scene) {
@@ -114,6 +122,14 @@ export class GameSession {
 		return this._state === "ending";
 	}
 
+	get isReady(): boolean {
+		return this._state === "ready";
+	}
+
+	get isPlaying(): boolean {
+		return this._state === "playing";
+	}
+
 	get state(): GameSessionState {
 		return this._state;
 	}
@@ -131,6 +147,23 @@ export class GameSession {
 			return;
 		}
 		this.paused = paused;
+	}
+
+	/**
+	 * Transition ready → playing and emit gameplay-started once.
+	 * No-op if already started or destroyed.
+	 */
+	startGame(): boolean {
+		if (this.destroyed || this._state !== "ready" || this.startedEmitted) {
+			return false;
+		}
+		this._state = "playing";
+		this.startedEmitted = true;
+		this.scene.events.emit(GAMEPLAY_STARTED_EVENT, {
+			gameSessionId: this._gameSessionId,
+			durationSeconds: GameSession.DURATION_SECONDS,
+		} satisfies GameplayStartedPayload);
+		return true;
 	}
 
 	/**

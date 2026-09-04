@@ -1,13 +1,19 @@
 /**
  * Per-item gameplay balance — chỉnh từng vật phẩm tại đây.
  *
+ * SIZE GUIDE:
+ * scale: 1.0 = original image size
+ * scale: 0.5 = half size
+ * scale: 1.2 = 20% larger
+ * Keep scale greater than 0.
+ *
  * - rewardMin/rewardMax: khoảng điểm
  * - rewardOperation: add | subtract
  * - effectType: scrap | gem | valuable | time | bomb | power
  * - timeBonusSeconds: cộng giây (0 nếu không phải time item)
  * - retractSpeed: tốc độ kéo lên; số càng nhỏ càng nặng/chậm
  * - spawnWeight: xác suất xuất hiện tương đối
- * - displayScale: kích thước hiển thị
+ * - scale: kích thước hiển thị (mỗi vật phẩm chỉnh riêng)
  *
  * Mỗi entry được viết tường minh (không generate runtime).
  *
@@ -44,7 +50,7 @@ export interface ItemBalanceEntry {
 	retractSpeed: number;
 	spawnWeight: number;
 	spawnZones: readonly SpawnZoneLabel[];
-	displayScale: number;
+	scale: number;
 }
 
 /** Construct 1920 → Phaser 1280 uniform scale for 1:1 source art. */
@@ -75,7 +81,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5, // sheet Frequency: each 30s
 		spawnZones: ["Upper", "Middle"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "barrel",
@@ -91,7 +97,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "bone",
@@ -107,7 +113,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "skull",
@@ -123,7 +129,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		displayScale: SCALE_SKULL,
+		scale: SCALE_SKULL,
 	},
 
 	// --- Gems (sheet Others values + zones; Construct Reward noted where different) ---
@@ -141,7 +147,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 3, // sheet: spawn 1 item each 30s
 		spawnZones: ["Middle", "Lower"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "emerald",
@@ -157,7 +163,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 2, // TEMP relative: sheet Frequency blank (same gem group as diamond)
 		spawnZones: ["Middle", "Lower"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "ruby",
@@ -173,7 +179,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 2, // TEMP relative: sheet Frequency blank
 		spawnZones: ["Middle", "Lower"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "star",
@@ -189,7 +195,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_VERY_LIGHT,
 		spawnWeight: 3, // sheet: each 45s
 		spawnZones: ["Middle", "Lower"],
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "valuable",
@@ -206,7 +212,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		spawnWeight: 1, // sheet: rare
 		spawnZones: ["Lower"],
 		// TEMP: source frames are 7–18px; scale up so the sparkle is visible underwater.
-		displayScale: 3,
+		scale: 3,
 	},
 
 	// --- Bonuses (PENDING gameplay; emit bonus-collected only) ---
@@ -224,7 +230,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 1, // TEMP rare
 		spawnZones: ["Middle", "Lower"], // TEMP: not on sheet
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 	{
 		id: "bonus-power",
@@ -240,7 +246,7 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		retractSpeed: RETRACT_LIGHT,
 		spawnWeight: 1, // TEMP rare
 		spawnZones: ["Middle", "Lower"], // TEMP: not on sheet
-		displayScale: SCALE_NATIVE,
+		scale: SCALE_NATIVE,
 	},
 ];
 
@@ -265,6 +271,16 @@ if (ITEM_BALANCE.length !== 11) {
 			throw new Error(
 				`${entry.id} timeBonusSeconds must be a finite number >= 0`,
 			);
+		}
+		if (
+			typeof entry.scale !== "number" ||
+			!Number.isFinite(entry.scale) ||
+			entry.scale <= 0
+		) {
+			console.error(
+				`[ItemBalance] ${entry.id}: scale must be a finite number > 0 (got ${String(entry.scale)}). Using fallback ${SCALE_NATIVE}.`,
+			);
+			(entry as { scale: number }).scale = SCALE_NATIVE;
 		}
 	}
 }

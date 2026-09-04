@@ -9,13 +9,21 @@ import { HookController } from "../game/HookController";
 import { CreatureSpawner } from "../game/CreatureSpawner";
 import { CatchController } from "../game/CatchController";
 import { CatchFeedbackController } from "../game/CatchFeedbackController";
-import { GameSession, GAME_ENDING_EVENT } from "../game/GameSession";
+import {
+	GameSession,
+	GAME_ENDING_EVENT,
+} from "../game/GameSession";
 import { GameOverController } from "../game/GameOverController";
 import { HudController } from "../game/HudController";
 import { ItemSpawner } from "../game/ItemSpawner";
 import { AudioController } from "../game/AudioController";
 import { PauseController } from "../game/PauseController";
+import { HomeController } from "../game/HomeController";
 import { FlutterGameBridge } from "../game/FlutterGameBridge";
+import {
+	consumeLevelBootIntent,
+	setLevelBootIntent,
+} from "../game/LevelBoot";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -94,8 +102,9 @@ export default class Level extends Phaser.Scene {
 	private gameOverController!: GameOverController;
 	private hudController!: HudController;
 	private itemSpawner!: ItemSpawner;
-	private audioController!: AudioController;
+	private audioController?: AudioController;
 	private pauseController!: PauseController;
+	private homeController?: HomeController;
 	private readonly boundGameEnding = this.handleGameEnding.bind(this);
 	private endingHandled = false;
 	/** Discard first gameplay delta after resume to avoid a large frame jump. */
@@ -105,6 +114,14 @@ export default class Level extends Phaser.Scene {
 		this.editorCreate();
 		this.endingHandled = false;
 		this.skipNextGameplayDelta = false;
+
+		const bootIntent = consumeLevelBootIntent();
+
+		// Scene restart can re-enter create(); destroy any surviving owner first.
+		this.audioController?.destroy();
+		this.homeController?.destroy();
+		this.homeController = undefined;
+
 		this.itemSpawner = this.createItemSpawner();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
@@ -112,37 +129,65 @@ export default class Level extends Phaser.Scene {
 		this.gameSession = new GameSession(this);
 		this.catchFeedbackController = new CatchFeedbackController(this);
 		this.hudController = new HudController(this);
+		this.hudController.setVisible(true);
 		this.audioController = new AudioController(this);
-		this.gameOverController = new GameOverController(
-			this,
-			this.audioController,
-		);
+		this.gameOverController = new GameOverController(this, {
+			audio: this.audioController,
+			onPlayAgain: () => this.handleResultPlayAgain(),
+			onHome: () => this.handleResultHome(),
+		});
 		this.pauseController = new PauseController(this, this.audioController, {
 			canPause: () =>
 				this.gameSession.state === "playing" && !this.endingHandled,
 			onPausedChanged: (paused) => this.applyGameplayPaused(paused),
-			onRestart: () => this.handlePauseRestart(),
+			onHome: () => this.handlePauseHome(),
 		});
+		this.pauseController.setGameplayActive(false);
+
 		this.applyDisplayDepths();
 
 		this.events.on(GAME_ENDING_EVENT, this.boundGameEnding);
 
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.events.off(GAME_ENDING_EVENT, this.boundGameEnding);
-			this.pauseController.destroy();
-			this.audioController.destroy();
-			this.gameOverController.destroy();
-			this.hudController.destroy();
-			this.catchFeedbackController.destroy();
-			this.gameSession.destroy();
-			this.catchController.destroy();
-			this.creatureSpawner.destroy();
-			this.itemSpawner.destroy();
+			this.homeController?.destroy();
+			this.homeController = undefined;
+			this.pauseController?.destroy();
+			this.audioController?.destroy();
+			this.audioController = undefined;
+			this.gameOverController?.destroy();
+			this.hudController?.destroy();
+			this.catchFeedbackController?.destroy();
+			this.gameSession?.destroy();
+			this.catchController?.destroy();
+			this.creatureSpawner?.destroy();
+			this.itemSpawner?.destroy();
 		});
+
+		if (bootIntent === "playAgain") {
+			// Play Again: skip Home, start one clean gameplay session immediately.
+			this.beginGameplaySession({ playButtonSfx: false });
+		} else {
+			this.homeController = new HomeController(this, {
+				audio: this.audioController,
+				onPlay: () => this.handleHomePlay(),
+			});
+			// Home must be silent — preference only, no BGM request.
+			this.audioController.enterHomeScreen();
+		}
 	}
 
 	update(time: number, delta: number): void {
+		if (this.homeController?.isVisible) {
+			return;
+		}
+		if (this.gameOverController?.isVisible) {
+			return;
+		}
 		if (this.pauseController?.isPaused) {
+			return;
+		}
+		if (this.gameSession.isReady) {
 			return;
 		}
 
@@ -167,6 +212,49 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	private handleHomePlay(): void {
+		if (!this.gameSession.isReady) {
+			return;
+		}
+		this.homeController = undefined;
+		this.beginGameplaySession({ playButtonSfx: true });
+	}
+
+	/**
+	 * Shared ready → playing transition (Home Play and Result Play Again).
+	 */
+	private beginGameplaySession(options: { playButtonSfx: boolean }): void {
+		const audio = this.audioController;
+		if (!audio || !this.gameSession.isReady) {
+			return;
+		}
+
+		audio.notifyGameplayStarted();
+		audio.unlockFromGesture();
+		if (options.playButtonSfx) {
+			audio.playButtonSfx();
+		}
+
+		const started = this.gameSession.startGame();
+		if (!started) {
+			return;
+		}
+
+		this.hookController.beginGameplay();
+		this.creatureSpawner.beginSpawning();
+		this.itemSpawner.beginSpawning();
+		this.catchController.setPaused(false);
+		this.hudController.setVisible(true);
+		this.pauseController.setGameplayActive(true);
+
+		FlutterGameBridge.sendGameStarted({
+			gameSessionId: this.gameSession.gameSessionId,
+			durationSeconds: GameSession.DURATION_SECONDS,
+		});
+
+		this.skipNextGameplayDelta = true;
+	}
+
 	private applyGameplayPaused(paused: boolean): void {
 		this.gameSession.setPaused(paused);
 		this.hookController.setPaused(paused);
@@ -175,19 +263,44 @@ export default class Level extends Phaser.Scene {
 		this.catchController.setPaused(paused);
 		this.catchFeedbackController.setPaused(paused);
 
+		const audio = this.audioController;
+		if (!audio) {
+			return;
+		}
 		if (paused) {
-			this.audioController.pauseAll();
+			audio.onPauseOverlayOpened();
 		} else {
-			this.audioController.resumeAll({
+			audio.onPauseOverlayClosed({
 				resumeWinch: this.hookController.isRetracting,
 			});
 			this.skipNextGameplayDelta = true;
 		}
 	}
 
-	private handlePauseRestart(): void {
-		FlutterGameBridge.sendRestartGame(this.gameSession.gameSessionId);
-		// SHUTDOWN destroys PauseController without resuming old audio.
+	private handlePauseHome(): void {
+		// Abort mid-run: no GAME_FINISHED, no score save/submit.
+		this.endingHandled = true;
+		this.pauseController.setGameplayActive(false);
+		const audio = this.audioController;
+		if (audio) {
+			audio.clearPauseHold();
+			audio.enterHomeScreen();
+		}
+		setLevelBootIntent("home");
+		this.scene.restart();
+	}
+
+	private handleResultPlayAgain(): void {
+		setLevelBootIntent("playAgain");
+		this.scene.restart();
+	}
+
+	private handleResultHome(): void {
+		const audio = this.audioController;
+		if (audio) {
+			audio.enterHomeScreen();
+		}
+		setLevelBootIntent("home");
 		this.scene.restart();
 	}
 
@@ -199,7 +312,11 @@ export default class Level extends Phaser.Scene {
 
 		this.hookController.setInputEnabled(false);
 		this.creatureSpawner.setEnabled(false);
+		this.creatureSpawner.setPaused(true);
 		this.itemSpawner.setEnabled(false);
+		this.itemSpawner.setPaused(true);
+		this.catchFeedbackController.setPaused(true);
+		this.pauseController.setGameplayActive(false);
 
 		if (this.hookController.state === "SWINGING") {
 			this.gameSession.completeEnding();
@@ -252,15 +369,18 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private createCatchController(): CatchController {
-		return new CatchController(
+		const catchController = new CatchController(
 			this,
 			this.hookController,
 			this.creatureSpawner,
 			this.itemSpawner,
 		);
+		// Inactive until Home → Play.
+		catchController.setPaused(true);
+		return catchController;
 	}
 
-	/** Background < items < creatures < player / hook. HUD 1000. Overlay 2000+. */
+	/** Background < items < creatures < player / hook. HUD 1000. Overlay 1500+. */
 	private applyDisplayDepths(): void {
 		this.gameBackground?.setDepth(0);
 		this.water?.setDepth(1);

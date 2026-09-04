@@ -19,8 +19,14 @@ class Boot extends Phaser.Scene {
     }
 }
 
-window.addEventListener('load', function () {
-	
+let gameBooted = false;
+
+function startGame(): void {
+	if (gameBooted) {
+		return;
+	}
+	gameBooted = true;
+
 	const game = new Phaser.Game({
 		width: 1280,
 		height: 720,
@@ -34,4 +40,10 @@ window.addEventListener('load', function () {
 	});
 
 	game.scene.start("Boot");
-});
+}
+
+if (document.readyState === "complete") {
+	startGame();
+} else {
+	window.addEventListener("load", startGame, { once: true });
+}

@@ -100,7 +100,8 @@ export class ItemSpawner {
 		};
 
 		this.validateCatalogAssets();
-		this.spawnInitialItems();
+		// Items appear only after Home → Play (beginSpawning).
+		this.enabled = false;
 
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
 	}
@@ -128,6 +129,19 @@ export class ItemSpawner {
 			return;
 		}
 		this.enabled = enabled;
+	}
+
+	/**
+	 * Enable spawning and create the initial five items (exactly once per Level).
+	 */
+	beginSpawning(): void {
+		if (this.destroyed) {
+			return;
+		}
+		this.enabled = true;
+		if (this.active.size === 0 && this.claimed.size === 0) {
+			this.spawnInitialItems();
+		}
 	}
 
 	/**
@@ -281,7 +295,8 @@ export class ItemSpawner {
 		object.setName(`item-${definition.id}-${this.nextNameIndex}`);
 		this.nextNameIndex += 1;
 		object.setPosition(position.x, position.y);
-		object.setScale(definition.displayScale);
+		object.setScale(definition.scale);
+		object.setData("baseScale", definition.scale);
 		object.setDepth(ItemSpawner.ITEM_DEPTH);
 		object.setData("itemId", definition.id);
 		object.setData("rewardMin", definition.rewardMin);

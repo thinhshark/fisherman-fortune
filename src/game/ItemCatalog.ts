@@ -32,7 +32,7 @@ export interface ItemDefinition {
 	retractSpeed: number;
 	spawnWeight: number;
 	spawnZones: readonly SpawnZoneLabel[];
-	displayScale: number;
+	scale: number;
 }
 
 function fromBalance(balance: ItemBalanceEntry): ItemDefinition {
@@ -49,7 +49,7 @@ function fromBalance(balance: ItemBalanceEntry): ItemDefinition {
 		retractSpeed: balance.retractSpeed,
 		spawnWeight: balance.spawnWeight,
 		spawnZones: balance.spawnZones,
-		displayScale: balance.displayScale,
+		scale: balance.scale,
 	};
 }
 

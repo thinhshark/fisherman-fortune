@@ -53,8 +53,8 @@ export const FREQUENCY_WEIGHT: Record<FrequencyLabel, number> = {
 };
 
 /**
- * Uniform display scales (reference; live scales come from CreatureBalance).
- * Toxic fish reuse Big Fish art sizes → big-fish scale.
+ * Category reference scales (legacy sheet). Live per-creature scales come from
+ * CreatureBalance.scale — edit that file, not this map.
  */
 export const CATEGORY_DISPLAY_SCALE: Record<CreatureCategory, number> = {
 	"Small Fish": 0.3936,
@@ -102,7 +102,7 @@ export interface CreatureDefinition {
 	defaultFacing: Facing;
 	isCrab: boolean;
 	isToxic: boolean;
-	displayScale: number;
+	scale: number;
 }
 
 function valueSpec(raw: string, min: number, max: number): CreatureValueSpec {
@@ -219,7 +219,7 @@ function buildCreature(
 		defaultFacing,
 		isCrab: sheet.isCrab,
 		isToxic: sheet.isToxic,
-		displayScale: balance.displayScale,
+		scale: balance.scale,
 	};
 }
 

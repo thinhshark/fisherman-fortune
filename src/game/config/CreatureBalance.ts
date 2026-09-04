@@ -1,11 +1,17 @@
 /**
  * Per-creature gameplay balance — chỉnh từng cá thể tại đây.
  *
+ * SIZE GUIDE:
+ * scale: 1.0 = original image size
+ * scale: 0.5 = half size
+ * scale: 1.2 = 20% larger
+ * Keep scale greater than 0.
+ *
  * - movementSpeed: tốc độ di chuyển
  * - retractSpeed: tốc độ kéo lên; số càng nhỏ càng nặng/chậm
  * - spawnWeight: xác suất xuất hiện tương đối
  * - rewardMin/rewardMax: khoảng điểm
- * - displayScale: kích thước hiển thị
+ * - scale: kích thước hiển thị (mỗi cá thể chỉnh riêng)
  *
  * Mỗi entry được viết tường minh (không generate runtime) để dễ chỉnh tay.
  */
@@ -24,7 +30,7 @@ export interface CreatureBalanceEntry {
 	rewardMin: number;
 	rewardMax: number;
 	rewardOperation: RewardOperation;
-	displayScale: number;
+	scale: number;
 }
 
 /** Fast / Medium / Slow sheet speeds at Phaser 1280×720 (1920 sheet × 1280/1920). */
@@ -50,7 +56,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-02",
@@ -62,7 +68,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-03",
@@ -74,7 +80,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-04",
@@ -86,7 +92,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-05",
@@ -98,7 +104,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-06",
@@ -110,7 +116,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-07",
@@ -122,7 +128,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-08",
@@ -134,7 +140,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-09",
@@ -146,7 +152,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 	{
 		id: "small-fish-10",
@@ -158,7 +164,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_SMALL_FISH,
+		scale: SCALE_SMALL_FISH,
 	},
 
 	// --- Jelly (Medium, +50–100, Middle/Lower, retract 280) ---
@@ -172,7 +178,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-02",
@@ -184,7 +190,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-03",
@@ -196,7 +202,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-04",
@@ -208,7 +214,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-05",
@@ -220,7 +226,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-06",
@@ -232,7 +238,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-07",
@@ -244,7 +250,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-08",
@@ -256,7 +262,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 	{
 		id: "jelly-09",
@@ -268,7 +274,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_JELLY,
+		scale: SCALE_JELLY,
 	},
 
 	// --- Big Fish (Heavy, +150–200, Lower, retract 120) ---
@@ -282,7 +288,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 150,
 		rewardMax: 200,
 		rewardOperation: "add",
-		displayScale: SCALE_BIG_FISH,
+		scale: SCALE_BIG_FISH,
 	},
 	{
 		id: "big-fish-02",
@@ -294,7 +300,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 150,
 		rewardMax: 200,
 		rewardOperation: "add",
-		displayScale: SCALE_BIG_FISH,
+		scale: SCALE_BIG_FISH,
 	},
 	{
 		id: "big-fish-03",
@@ -306,7 +312,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 150,
 		rewardMax: 200,
 		rewardOperation: "add",
-		displayScale: SCALE_BIG_FISH,
+		scale: SCALE_BIG_FISH,
 	},
 	{
 		id: "big-fish-04",
@@ -318,7 +324,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 150,
 		rewardMax: 200,
 		rewardOperation: "add",
-		displayScale: SCALE_BIG_FISH,
+		scale: SCALE_BIG_FISH,
 	},
 	{
 		id: "big-fish-05",
@@ -330,7 +336,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 150,
 		rewardMax: 200,
 		rewardOperation: "add",
-		displayScale: SCALE_BIG_FISH,
+		scale: SCALE_BIG_FISH,
 	},
 	{
 		id: "big-fish-06",
@@ -342,7 +348,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 150,
 		rewardMax: 200,
 		rewardOperation: "add",
-		displayScale: SCALE_BIG_FISH,
+		scale: SCALE_BIG_FISH,
 	},
 
 	// --- Toxic Fish (Light, −1–50, Upper/Middle, retract 500) ---
@@ -356,7 +362,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 50,
 		rewardOperation: "subtract",
-		displayScale: SCALE_TOXIC_FISH,
+		scale: SCALE_TOXIC_FISH,
 	},
 	{
 		id: "toxic-fish-02",
@@ -368,7 +374,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 50,
 		rewardOperation: "subtract",
-		displayScale: SCALE_TOXIC_FISH,
+		scale: SCALE_TOXIC_FISH,
 	},
 	{
 		id: "toxic-fish-03",
@@ -380,7 +386,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 50,
 		rewardOperation: "subtract",
-		displayScale: SCALE_TOXIC_FISH,
+		scale: SCALE_TOXIC_FISH,
 	},
 	{
 		id: "toxic-fish-04",
@@ -392,7 +398,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 50,
 		rewardOperation: "subtract",
-		displayScale: SCALE_TOXIC_FISH,
+		scale: SCALE_TOXIC_FISH,
 	},
 
 	// --- Normal crab (Light, +1–49, retract 500) ---
@@ -406,7 +412,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_CRAB,
+		scale: SCALE_CRAB,
 	},
 	{
 		id: "normal-crab-02",
@@ -418,7 +424,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 1,
 		rewardMax: 49,
 		rewardOperation: "add",
-		displayScale: SCALE_CRAB,
+		scale: SCALE_CRAB,
 	},
 
 	// --- Rare crab (Light, +50–100, retract 500) ---
@@ -432,7 +438,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_CRAB,
+		scale: SCALE_CRAB,
 	},
 	{
 		id: "rare-crab-02",
@@ -444,7 +450,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardMin: 50,
 		rewardMax: 100,
 		rewardOperation: "add",
-		displayScale: SCALE_CRAB,
+		scale: SCALE_CRAB,
 	},
 ];
 
@@ -474,6 +480,16 @@ if (CREATURE_BALANCE.length !== 33) {
 			throw new Error(
 				`${entry.id} rewardMin (${entry.rewardMin}) > rewardMax (${entry.rewardMax})`,
 			);
+		}
+		if (
+			typeof entry.scale !== "number" ||
+			!Number.isFinite(entry.scale) ||
+			entry.scale <= 0
+		) {
+			console.error(
+				`[CreatureBalance] ${entry.id}: scale must be a finite number > 0 (got ${String(entry.scale)}). Using fallback 1.`,
+			);
+			(entry as { scale: number }).scale = 1;
 		}
 	}
 }

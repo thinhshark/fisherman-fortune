@@ -11,6 +11,14 @@ const LOG_BRIDGE_EVENTS = false;
 
 export const FISHERMAN_FORTUNE_EVENT = "fisherman-fortune";
 
+export interface GameStartedBridgePayload {
+	type: "GAME_STARTED";
+	version: 1;
+	gameSessionId: string;
+	durationSeconds: number;
+	startedAt: string;
+}
+
 export interface GameFinishedBridgePayload {
 	type: "GAME_FINISHED";
 	version: 1;
@@ -31,13 +39,22 @@ export interface OpenLeaderboardBridgePayload {
 	version: 1;
 }
 
+export interface ExitGameBridgePayload {
+	type: "EXIT_GAME";
+	version: 1;
+}
+
 export type FishermanFortuneBridgePayload =
+	| GameStartedBridgePayload
 	| GameFinishedBridgePayload
 	| RestartGameBridgePayload
-	| OpenLeaderboardBridgePayload;
+	| OpenLeaderboardBridgePayload
+	| ExitGameBridgePayload;
 
 /** Session IDs that already emitted GAME_FINISHED this page runtime. */
 const sentFinishedSessionIds = new Set<string>();
+/** Session IDs that already emitted GAME_STARTED this page runtime. */
+const sentStartedSessionIds = new Set<string>();
 
 function isNonNegativeInt(value: unknown): value is number {
 	return (
@@ -123,6 +140,39 @@ function deliver(payload: FishermanFortuneBridgePayload): void {
  */
 export const FlutterGameBridge = {
 	/**
+	 * Emit GAME_STARTED once per `gameSessionId` for this page runtime.
+	 */
+	sendGameStarted(input: {
+		gameSessionId: string;
+		durationSeconds?: number;
+		startedAt?: string;
+	}): boolean {
+		const { gameSessionId } = input;
+		if (typeof gameSessionId !== "string" || gameSessionId.length === 0) {
+			return false;
+		}
+		if (sentStartedSessionIds.has(gameSessionId)) {
+			return false;
+		}
+		sentStartedSessionIds.add(gameSessionId);
+
+		const payload: GameStartedBridgePayload = {
+			type: "GAME_STARTED",
+			version: 1,
+			gameSessionId,
+			durationSeconds:
+				input.durationSeconds ?? GameSession.DURATION_SECONDS,
+			startedAt: input.startedAt ?? new Date().toISOString(),
+		};
+		try {
+			deliver(payload);
+			return true;
+		} catch {
+			return true;
+		}
+	},
+
+	/**
 	 * Emit GAME_FINISHED once per `gameSessionId` for this page runtime.
 	 */
 	sendGameFinished(input: {
@@ -184,10 +234,7 @@ export const FlutterGameBridge = {
 		}
 	},
 
-	/**
-	 * Ask Flutter to open the real (account-backed) leaderboard.
-	 * Prepared for a future UI button — not required by current Game Over.
-	 */
+	/** Ask Flutter to open the real (account-backed) leaderboard. */
 	sendOpenLeaderboard(): boolean {
 		const payload: OpenLeaderboardBridgePayload = {
 			type: "OPEN_LEADERBOARD",
@@ -201,8 +248,25 @@ export const FlutterGameBridge = {
 		}
 	},
 
-	/** Test helper: whether GAME_FINISHED was already sent for this session. */
+	/** Ask Flutter to close / leave the WebView game. */
+	sendExitGame(): boolean {
+		const payload: ExitGameBridgePayload = {
+			type: "EXIT_GAME",
+			version: 1,
+		};
+		try {
+			deliver(payload);
+			return true;
+		} catch {
+			return false;
+		}
+	},
+
 	hasSentGameFinished(gameSessionId: string): boolean {
 		return sentFinishedSessionIds.has(gameSessionId);
+	},
+
+	hasSentGameStarted(gameSessionId: string): boolean {
+		return sentStartedSessionIds.has(gameSessionId);
 	},
 } as const;

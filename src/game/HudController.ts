@@ -236,4 +236,15 @@ export class HudController {
 			/* non-blocking */
 		});
 	}
+
+	/** Show/hide score + timer panels (ready-state / overlay coordination). */
+	setVisible(visible: boolean): void {
+		if (this.destroyed) {
+			return;
+		}
+		this.scorePanel.setVisible(visible);
+		this.timePanel.setVisible(visible);
+		this.scoreText.setVisible(visible);
+		this.timeText.setVisible(visible);
+	}
 }

@@ -81,7 +81,8 @@ export class CreatureSpawner {
 		};
 
 		this.validateCatalogAssets();
-		this.scheduleSpawn(CreatureSpawner.INITIAL_DELAY_MS);
+		// Spawning begins only after Home → Play (setEnabled / beginSpawning).
+		this.enabled = false;
 
 		scene.events.once(
 			Phaser.Scenes.Events.SHUTDOWN,
@@ -124,8 +125,13 @@ export class CreatureSpawner {
 			this.spawnTimer?.remove(false);
 			this.spawnTimer = undefined;
 		} else if (!this.spawnTimer && !this.paused) {
-			this.scheduleSpawn(CreatureSpawner.MIN_SPAWN_INTERVAL_MS);
+			this.scheduleSpawn(CreatureSpawner.INITIAL_DELAY_MS);
 		}
+	}
+
+	/** Start the normal initial spawn delay after Home → Play. */
+	beginSpawning(): void {
+		this.setEnabled(true);
 	}
 
 	/**
@@ -318,7 +324,8 @@ export class CreatureSpawner {
 		);
 		sprite.setName(`creature-${definition.id}-${this.nextNameIndex}`);
 		this.nextNameIndex += 1;
-		sprite.setScale(definition.displayScale);
+		sprite.setScale(definition.scale);
+		sprite.setData("baseScale", definition.scale);
 		sprite.setDepth(CreatureSpawner.CREATURE_DEPTH);
 		sprite.setData("creatureId", definition.id);
 		sprite.setData("category", definition.category);
