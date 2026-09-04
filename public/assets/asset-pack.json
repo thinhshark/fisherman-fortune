@@ -2,14 +2,14 @@
     "section1": {
         "files": [
             {
+                "url": "assets/FufuSuperDino.png",
+                "type": "image",
+                "key": "FufuSuperDino"
+            },
+            {
                 "url": "assets/images/backgrounds/background-jungle.jpg",
                 "type": "image",
                 "key": "background-jungle"
-            },
-            {
-                "url": "assets/images/player/boat.png",
-                "type": "image",
-                "key": "boat"
             },
             {
                 "url": "assets/animations/creature-animations.json",
@@ -17,29 +17,9 @@
                 "key": "creature-animations"
             },
             {
-                "url": "assets/FufuSuperDino.png",
-                "type": "image",
-                "key": "FufuSuperDino"
-            },
-            {
-                "url": "assets/images/hook/hook-left.png",
-                "type": "image",
-                "key": "hook-left"
-            },
-            {
-                "url": "assets/images/hook/hook-right.png",
-                "type": "image",
-                "key": "hook-right"
-            },
-            {
-                "url": "assets/images/hook/hook-sine.png",
-                "type": "image",
-                "key": "hook-sine"
-            },
-            {
-                "url": "assets/images/hook/rope.png",
-                "type": "image",
-                "key": "rope"
+                "url": "assets/animations/game-animations.json",
+                "type": "animation",
+                "key": "game-animations"
             },
             {
                 "url": "assets/images/fish/small/small-fish-01/small-fish-01-swim-001.png",
@@ -2052,9 +2032,991 @@
                 "key": "rare-crab-02-walk-011"
             },
             {
+                "url": "assets/images/backgrounds/abstractsolidshiningyellowgradientstudiowallroombackground.png",
+                "type": "image",
+                "key": "abstractsolidshiningyellowgradientstudiowallroombackground"
+            },
+            {
+                "url": "assets/images/backgrounds/bg-board-tutorialcopy.png",
+                "type": "image",
+                "key": "bg-board-tutorialcopy"
+            },
+            {
+                "url": "assets/images/backgrounds/bg.png",
+                "type": "image",
+                "key": "bg"
+            },
+            {
+                "url": "assets/images/backgrounds/black-screen.png",
+                "type": "image",
+                "key": "black-screen"
+            },
+            {
+                "url": "assets/images/backgrounds/deco-pillar-001.png",
+                "type": "image",
+                "key": "deco-pillar-001"
+            },
+            {
+                "url": "assets/images/backgrounds/deco-pillar-002.png",
+                "type": "image",
+                "key": "deco-pillar-002"
+            },
+            {
+                "url": "assets/images/backgrounds/game-bg.png",
+                "type": "image",
+                "key": "game-bg"
+            },
+            {
+                "url": "assets/images/backgrounds/story-bg-001.png",
+                "type": "image",
+                "key": "story-bg-001"
+            },
+            {
+                "url": "assets/images/backgrounds/story-bg-002.png",
+                "type": "image",
+                "key": "story-bg-002"
+            },
+            {
+                "url": "assets/images/backgrounds/story-bg-003.png",
+                "type": "image",
+                "key": "story-bg-003"
+            },
+            {
+                "url": "assets/images/backgrounds/story-bg-004.png",
+                "type": "image",
+                "key": "story-bg-004"
+            },
+            {
                 "url": "assets/images/backgrounds/water.png",
                 "type": "image",
                 "key": "water"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-001.png",
+                "type": "image",
+                "key": "explosion-barrel-001"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-002.png",
+                "type": "image",
+                "key": "explosion-barrel-002"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-003.png",
+                "type": "image",
+                "key": "explosion-barrel-003"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-004.png",
+                "type": "image",
+                "key": "explosion-barrel-004"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-005.png",
+                "type": "image",
+                "key": "explosion-barrel-005"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-006.png",
+                "type": "image",
+                "key": "explosion-barrel-006"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-007.png",
+                "type": "image",
+                "key": "explosion-barrel-007"
+            },
+            {
+                "url": "assets/images/fx/explosion-barrel-008.png",
+                "type": "image",
+                "key": "explosion-barrel-008"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-001.png",
+                "type": "image",
+                "key": "explosion-bomb-001"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-002.png",
+                "type": "image",
+                "key": "explosion-bomb-002"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-003.png",
+                "type": "image",
+                "key": "explosion-bomb-003"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-004.png",
+                "type": "image",
+                "key": "explosion-bomb-004"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-005.png",
+                "type": "image",
+                "key": "explosion-bomb-005"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-006.png",
+                "type": "image",
+                "key": "explosion-bomb-006"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-007.png",
+                "type": "image",
+                "key": "explosion-bomb-007"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-008.png",
+                "type": "image",
+                "key": "explosion-bomb-008"
+            },
+            {
+                "url": "assets/images/fx/explosion-bomb-009.png",
+                "type": "image",
+                "key": "explosion-bomb-009"
+            },
+            {
+                "url": "assets/images/fx/levelparticles.png",
+                "type": "image",
+                "key": "levelparticles"
+            },
+            {
+                "url": "assets/images/fx/light.png",
+                "type": "image",
+                "key": "light"
+            },
+            {
+                "url": "assets/images/fx/story-fade.png",
+                "type": "image",
+                "key": "story-fade"
+            },
+            {
+                "url": "assets/images/fx/water-effect-001.png",
+                "type": "image",
+                "key": "water-effect-001"
+            },
+            {
+                "url": "assets/images/fx/water-effect-002.png",
+                "type": "image",
+                "key": "water-effect-002"
+            },
+            {
+                "url": "assets/images/fx/water-effect-003.png",
+                "type": "image",
+                "key": "water-effect-003"
+            },
+            {
+                "url": "assets/images/fx/water-effect-004.png",
+                "type": "image",
+                "key": "water-effect-004"
+            },
+            {
+                "url": "assets/images/fx/water-effect-005.png",
+                "type": "image",
+                "key": "water-effect-005"
+            },
+            {
+                "url": "assets/images/fx/water-effect-006.png",
+                "type": "image",
+                "key": "water-effect-006"
+            },
+            {
+                "url": "assets/images/fx/water-effect-007.png",
+                "type": "image",
+                "key": "water-effect-007"
+            },
+            {
+                "url": "assets/images/fx/water-effect-008.png",
+                "type": "image",
+                "key": "water-effect-008"
+            },
+            {
+                "url": "assets/images/fx/water-effect-009.png",
+                "type": "image",
+                "key": "water-effect-009"
+            },
+            {
+                "url": "assets/images/fx/water-effect-010.png",
+                "type": "image",
+                "key": "water-effect-010"
+            },
+            {
+                "url": "assets/images/fx/water-effect-011.png",
+                "type": "image",
+                "key": "water-effect-011"
+            },
+            {
+                "url": "assets/images/fx/water-effect-012.png",
+                "type": "image",
+                "key": "water-effect-012"
+            },
+            {
+                "url": "assets/images/fx/water-effect-013.png",
+                "type": "image",
+                "key": "water-effect-013"
+            },
+            {
+                "url": "assets/images/fx/water-effect-014.png",
+                "type": "image",
+                "key": "water-effect-014"
+            },
+            {
+                "url": "assets/images/fx/water-effect-015.png",
+                "type": "image",
+                "key": "water-effect-015"
+            },
+            {
+                "url": "assets/images/hook/hook-collision.png",
+                "type": "image",
+                "key": "hook-collision"
+            },
+            {
+                "url": "assets/images/hook/hook-left.png",
+                "type": "image",
+                "key": "hook-left"
+            },
+            {
+                "url": "assets/images/hook/hook-right.png",
+                "type": "image",
+                "key": "hook-right"
+            },
+            {
+                "url": "assets/images/hook/hook-sine.png",
+                "type": "image",
+                "key": "hook-sine"
+            },
+            {
+                "url": "assets/images/hook/rope-collision.png",
+                "type": "image",
+                "key": "rope-collision"
+            },
+            {
+                "url": "assets/images/hook/rope.png",
+                "type": "image",
+                "key": "rope"
+            },
+            {
+                "url": "assets/images/items/bonuses/bomb-button.png",
+                "type": "image",
+                "key": "bomb-button"
+            },
+            {
+                "url": "assets/images/items/bonuses/bonus-bomb.png",
+                "type": "image",
+                "key": "bonus-bomb"
+            },
+            {
+                "url": "assets/images/items/bonuses/bonus-power.png",
+                "type": "image",
+                "key": "bonus-power"
+            },
+            {
+                "url": "assets/images/items/gems/diamond.png",
+                "type": "image",
+                "key": "diamond"
+            },
+            {
+                "url": "assets/images/items/gems/emerald.png",
+                "type": "image",
+                "key": "emerald"
+            },
+            {
+                "url": "assets/images/items/gems/ruby.png",
+                "type": "image",
+                "key": "ruby"
+            },
+            {
+                "url": "assets/images/items/gems/star.png",
+                "type": "image",
+                "key": "star"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-001.png",
+                "type": "image",
+                "key": "valuable-001"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-002.png",
+                "type": "image",
+                "key": "valuable-002"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-003.png",
+                "type": "image",
+                "key": "valuable-003"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-004.png",
+                "type": "image",
+                "key": "valuable-004"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-005.png",
+                "type": "image",
+                "key": "valuable-005"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-006.png",
+                "type": "image",
+                "key": "valuable-006"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-007.png",
+                "type": "image",
+                "key": "valuable-007"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-008.png",
+                "type": "image",
+                "key": "valuable-008"
+            },
+            {
+                "url": "assets/images/items/gems/valuable-009.png",
+                "type": "image",
+                "key": "valuable-009"
+            },
+            {
+                "url": "assets/images/items/scrap/bag-trace.png",
+                "type": "image",
+                "key": "bag-trace"
+            },
+            {
+                "url": "assets/images/items/scrap/bag.png",
+                "type": "image",
+                "key": "bag"
+            },
+            {
+                "url": "assets/images/items/scrap/barrel-trace.png",
+                "type": "image",
+                "key": "barrel-trace"
+            },
+            {
+                "url": "assets/images/items/scrap/barrel.png",
+                "type": "image",
+                "key": "barrel"
+            },
+            {
+                "url": "assets/images/items/scrap/bone-trace.png",
+                "type": "image",
+                "key": "bone-trace"
+            },
+            {
+                "url": "assets/images/items/scrap/bone.png",
+                "type": "image",
+                "key": "bone"
+            },
+            {
+                "url": "assets/images/items/scrap/skull-trace.png",
+                "type": "image",
+                "key": "skull-trace"
+            },
+            {
+                "url": "assets/images/items/scrap/skull.png",
+                "type": "image",
+                "key": "skull"
+            },
+            {
+                "url": "assets/images/player/boat.png",
+                "type": "image",
+                "key": "boat"
+            },
+            {
+                "url": "assets/images/player/fisherman-idle.png",
+                "type": "image",
+                "key": "fisherman-idle"
+            },
+            {
+                "url": "assets/images/player/fisherman-pedaling.png",
+                "type": "image",
+                "key": "fisherman-pedaling"
+            },
+            {
+                "url": "assets/images/player/player-idle-001.png",
+                "type": "image",
+                "key": "player-idle-001"
+            },
+            {
+                "url": "assets/images/player/player-idle-002.png",
+                "type": "image",
+                "key": "player-idle-002"
+            },
+            {
+                "url": "assets/images/player/player-idle-003.png",
+                "type": "image",
+                "key": "player-idle-003"
+            },
+            {
+                "url": "assets/images/player/player-idle-004.png",
+                "type": "image",
+                "key": "player-idle-004"
+            },
+            {
+                "url": "assets/images/player/player-pulling-001.png",
+                "type": "image",
+                "key": "player-pulling-001"
+            },
+            {
+                "url": "assets/images/player/player-pulling-002.png",
+                "type": "image",
+                "key": "player-pulling-002"
+            },
+            {
+                "url": "assets/images/player/player-pulling-003.png",
+                "type": "image",
+                "key": "player-pulling-003"
+            },
+            {
+                "url": "assets/images/player/player-pulling-004.png",
+                "type": "image",
+                "key": "player-pulling-004"
+            },
+            {
+                "url": "assets/images/player/player-pulling-005.png",
+                "type": "image",
+                "key": "player-pulling-005"
+            },
+            {
+                "url": "assets/images/player/player-pulling-006.png",
+                "type": "image",
+                "key": "player-pulling-006"
+            },
+            {
+                "url": "assets/images/player/player-pulling-007.png",
+                "type": "image",
+                "key": "player-pulling-007"
+            },
+            {
+                "url": "assets/images/player/player-pulling-008.png",
+                "type": "image",
+                "key": "player-pulling-008"
+            },
+            {
+                "url": "assets/images/ui/common/text-bg.png",
+                "type": "image",
+                "key": "text-bg"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-bag-001.png",
+                "type": "image",
+                "key": "frame-bag-001"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-bag-002.png",
+                "type": "image",
+                "key": "frame-bag-002"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-bomb-001.png",
+                "type": "image",
+                "key": "frame-bomb-001"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-bomb-002.png",
+                "type": "image",
+                "key": "frame-bomb-002"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-jewel-001.png",
+                "type": "image",
+                "key": "frame-jewel-001"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-jewel-002.png",
+                "type": "image",
+                "key": "frame-jewel-002"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-power-001.png",
+                "type": "image",
+                "key": "frame-power-001"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-power-002.png",
+                "type": "image",
+                "key": "frame-power-002"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-silver-001.png",
+                "type": "image",
+                "key": "frame-silver-001"
+            },
+            {
+                "url": "assets/images/ui/hud/frame-silver-002.png",
+                "type": "image",
+                "key": "frame-silver-002"
+            },
+            {
+                "url": "assets/images/ui/hud/gui-frame.png",
+                "type": "image",
+                "key": "gui-frame"
+            },
+            {
+                "url": "assets/images/ui/hud/gui-level.png",
+                "type": "image",
+                "key": "gui-level"
+            },
+            {
+                "url": "assets/images/ui/hud/gui-score.png",
+                "type": "image",
+                "key": "gui-score"
+            },
+            {
+                "url": "assets/images/ui/hud/gui-target.png",
+                "type": "image",
+                "key": "gui-target"
+            },
+            {
+                "url": "assets/images/ui/hud/gui-time.png",
+                "type": "image",
+                "key": "gui-time"
+            },
+            {
+                "url": "assets/images/ui/menu/back-btnasset.png",
+                "type": "image",
+                "key": "back-btnasset"
+            },
+            {
+                "url": "assets/images/ui/menu/continue-001.png",
+                "type": "image",
+                "key": "continue-001"
+            },
+            {
+                "url": "assets/images/ui/menu/continue-002.png",
+                "type": "image",
+                "key": "continue-002"
+            },
+            {
+                "url": "assets/images/ui/menu/cursor-hover.png",
+                "type": "image",
+                "key": "cursor-hover"
+            },
+            {
+                "url": "assets/images/ui/menu/cursor.png",
+                "type": "image",
+                "key": "cursor"
+            },
+            {
+                "url": "assets/images/ui/menu/exit-001.png",
+                "type": "image",
+                "key": "exit-001"
+            },
+            {
+                "url": "assets/images/ui/menu/exit-002.png",
+                "type": "image",
+                "key": "exit-002"
+            },
+            {
+                "url": "assets/images/ui/menu/fullscreen-001.png",
+                "type": "image",
+                "key": "fullscreen-001"
+            },
+            {
+                "url": "assets/images/ui/menu/fullscreen-002.png",
+                "type": "image",
+                "key": "fullscreen-002"
+            },
+            {
+                "url": "assets/images/ui/menu/game-logo.png",
+                "type": "image",
+                "key": "game-logo"
+            },
+            {
+                "url": "assets/images/ui/menu/informationbutton.png",
+                "type": "image",
+                "key": "informationbutton"
+            },
+            {
+                "url": "assets/images/ui/menu/loading-start-001.png",
+                "type": "image",
+                "key": "loading-start-001"
+            },
+            {
+                "url": "assets/images/ui/menu/loading-start-002.png",
+                "type": "image",
+                "key": "loading-start-002"
+            },
+            {
+                "url": "assets/images/ui/menu/menu-001.png",
+                "type": "image",
+                "key": "menu-001"
+            },
+            {
+                "url": "assets/images/ui/menu/menu-002.png",
+                "type": "image",
+                "key": "menu-002"
+            },
+            {
+                "url": "assets/images/ui/menu/menu-btnasset.png",
+                "type": "image",
+                "key": "menu-btnasset"
+            },
+            {
+                "url": "assets/images/ui/menu/music-001.png",
+                "type": "image",
+                "key": "music-001"
+            },
+            {
+                "url": "assets/images/ui/menu/music-002.png",
+                "type": "image",
+                "key": "music-002"
+            },
+            {
+                "url": "assets/images/ui/menu/next-001.png",
+                "type": "image",
+                "key": "next-001"
+            },
+            {
+                "url": "assets/images/ui/menu/next-002.png",
+                "type": "image",
+                "key": "next-002"
+            },
+            {
+                "url": "assets/images/ui/menu/next-btnasset.png",
+                "type": "image",
+                "key": "next-btnasset"
+            },
+            {
+                "url": "assets/images/ui/menu/pause-001.png",
+                "type": "image",
+                "key": "pause-001"
+            },
+            {
+                "url": "assets/images/ui/menu/pause-002.png",
+                "type": "image",
+                "key": "pause-002"
+            },
+            {
+                "url": "assets/images/ui/menu/play.png",
+                "type": "image",
+                "key": "play"
+            },
+            {
+                "url": "assets/images/ui/menu/reload-001.png",
+                "type": "image",
+                "key": "reload-001"
+            },
+            {
+                "url": "assets/images/ui/menu/reload-002.png",
+                "type": "image",
+                "key": "reload-002"
+            },
+            {
+                "url": "assets/images/ui/menu/restart-001.png",
+                "type": "image",
+                "key": "restart-001"
+            },
+            {
+                "url": "assets/images/ui/menu/restart-002.png",
+                "type": "image",
+                "key": "restart-002"
+            },
+            {
+                "url": "assets/images/ui/menu/return-001.png",
+                "type": "image",
+                "key": "return-001"
+            },
+            {
+                "url": "assets/images/ui/menu/return-002.png",
+                "type": "image",
+                "key": "return-002"
+            },
+            {
+                "url": "assets/images/ui/menu/skip-cinm.png",
+                "type": "image",
+                "key": "skip-cinm"
+            },
+            {
+                "url": "assets/images/ui/menu/sound-001.png",
+                "type": "image",
+                "key": "sound-001"
+            },
+            {
+                "url": "assets/images/ui/menu/sound-002.png",
+                "type": "image",
+                "key": "sound-002"
+            },
+            {
+                "url": "assets/images/ui/menu/tutorial-001.png",
+                "type": "image",
+                "key": "tutorial-001"
+            },
+            {
+                "url": "assets/images/ui/menu/tutorial-002.png",
+                "type": "image",
+                "key": "tutorial-002"
+            },
+            {
+                "url": "assets/images/ui/menu/tutorial-003.png",
+                "type": "image",
+                "key": "tutorial-003"
+            },
+            {
+                "url": "assets/images/ui/pause/text-paused.png",
+                "type": "image",
+                "key": "text-paused"
+            },
+            {
+                "url": "assets/images/ui/result/text-you-won.png",
+                "type": "image",
+                "key": "text-you-won"
+            },
+            {
+                "url": "assets/images/ui/result/text-your-score.png",
+                "type": "image",
+                "key": "text-your-score"
+            },
+            {
+                "type": "audio",
+                "key": "music-game",
+                "url": [
+                    "assets/audio/music/game-music.webm",
+                    "assets/audio/music/game-music.ogg",
+                    "assets/audio/music/game-music.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "music-story",
+                "url": [
+                    "assets/audio/music/story-music.webm",
+                    "assets/audio/music/story-music.ogg",
+                    "assets/audio/music/story-music.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-1",
+                "url": [
+                    "assets/audio/sfx/1.webm",
+                    "assets/audio/sfx/1.ogg",
+                    "assets/audio/sfx/1.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-2",
+                "url": [
+                    "assets/audio/sfx/2.webm",
+                    "assets/audio/sfx/2.ogg",
+                    "assets/audio/sfx/2.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-3",
+                "url": [
+                    "assets/audio/sfx/3.webm",
+                    "assets/audio/sfx/3.ogg",
+                    "assets/audio/sfx/3.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-4",
+                "url": [
+                    "assets/audio/sfx/4.webm",
+                    "assets/audio/sfx/4.ogg",
+                    "assets/audio/sfx/4.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-5",
+                "url": [
+                    "assets/audio/sfx/5.webm",
+                    "assets/audio/sfx/5.ogg",
+                    "assets/audio/sfx/5.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-6",
+                "url": [
+                    "assets/audio/sfx/6.webm",
+                    "assets/audio/sfx/6.ogg",
+                    "assets/audio/sfx/6.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-7",
+                "url": [
+                    "assets/audio/sfx/7.webm",
+                    "assets/audio/sfx/7.ogg",
+                    "assets/audio/sfx/7.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-bomb",
+                "url": [
+                    "assets/audio/sfx/bomb.webm",
+                    "assets/audio/sfx/bomb.ogg",
+                    "assets/audio/sfx/bomb.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-bone",
+                "url": [
+                    "assets/audio/sfx/bone.webm",
+                    "assets/audio/sfx/bone.ogg",
+                    "assets/audio/sfx/bone.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-bonus",
+                "url": [
+                    "assets/audio/sfx/bonus.webm",
+                    "assets/audio/sfx/bonus.ogg",
+                    "assets/audio/sfx/bonus.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-button",
+                "url": [
+                    "assets/audio/sfx/button.webm",
+                    "assets/audio/sfx/button.ogg",
+                    "assets/audio/sfx/button.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-explosion",
+                "url": [
+                    "assets/audio/sfx/explosion.webm",
+                    "assets/audio/sfx/explosion.ogg",
+                    "assets/audio/sfx/explosion.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-game-over",
+                "url": [
+                    "assets/audio/sfx/game-over.webm",
+                    "assets/audio/sfx/game-over.ogg",
+                    "assets/audio/sfx/game-over.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-game-won",
+                "url": [
+                    "assets/audio/sfx/game-won.webm",
+                    "assets/audio/sfx/game-won.ogg",
+                    "assets/audio/sfx/game-won.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-gold",
+                "url": [
+                    "assets/audio/sfx/gold.webm",
+                    "assets/audio/sfx/gold.ogg",
+                    "assets/audio/sfx/gold.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-jewel",
+                "url": [
+                    "assets/audio/sfx/jewel.webm",
+                    "assets/audio/sfx/jewel.ogg",
+                    "assets/audio/sfx/jewel.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-level-completed",
+                "url": [
+                    "assets/audio/sfx/level-completed.webm",
+                    "assets/audio/sfx/level-completed.ogg",
+                    "assets/audio/sfx/level-completed.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-miss",
+                "url": [
+                    "assets/audio/sfx/miss.webm",
+                    "assets/audio/sfx/miss.ogg",
+                    "assets/audio/sfx/miss.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-mole",
+                "url": [
+                    "assets/audio/sfx/mole.webm",
+                    "assets/audio/sfx/mole.ogg",
+                    "assets/audio/sfx/mole.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-pause",
+                "url": [
+                    "assets/audio/sfx/pause.webm",
+                    "assets/audio/sfx/pause.ogg",
+                    "assets/audio/sfx/pause.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-score",
+                "url": [
+                    "assets/audio/sfx/score.webm",
+                    "assets/audio/sfx/score.ogg",
+                    "assets/audio/sfx/score.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-silver",
+                "url": [
+                    "assets/audio/sfx/silver.webm",
+                    "assets/audio/sfx/silver.ogg",
+                    "assets/audio/sfx/silver.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-skull",
+                "url": [
+                    "assets/audio/sfx/skull.webm",
+                    "assets/audio/sfx/skull.ogg",
+                    "assets/audio/sfx/skull.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-stone",
+                "url": [
+                    "assets/audio/sfx/stone.webm",
+                    "assets/audio/sfx/stone.ogg",
+                    "assets/audio/sfx/stone.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-timer",
+                "url": [
+                    "assets/audio/sfx/timer.webm",
+                    "assets/audio/sfx/timer.ogg",
+                    "assets/audio/sfx/timer.mp3"
+                ]
+            },
+            {
+                "type": "audio",
+                "key": "sfx-winch",
+                "url": [
+                    "assets/audio/sfx/winch.webm",
+                    "assets/audio/sfx/winch.ogg",
+                    "assets/audio/sfx/winch.mp3"
+                ]
             }
         ]
     },

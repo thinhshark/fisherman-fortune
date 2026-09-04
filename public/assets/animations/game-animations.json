@@ -1,0 +1,295 @@
+{
+    "anims": [
+        {
+            "key": "story-bg",
+            "frameRate": 8,
+            "repeat": -1,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": false,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "story-bg-001"
+                },
+                {
+                    "key": "story-bg-002"
+                },
+                {
+                    "key": "story-bg-003"
+                },
+                {
+                    "key": "story-bg-004"
+                }
+            ]
+        },
+        {
+            "key": "deco-pillar",
+            "frameRate": 6,
+            "repeat": -1,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": false,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "deco-pillar-001"
+                },
+                {
+                    "key": "deco-pillar-002"
+                }
+            ]
+        },
+        {
+            "key": "player-idle",
+            "frameRate": 8,
+            "repeat": -1,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": false,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "player-idle-001"
+                },
+                {
+                    "key": "player-idle-002"
+                },
+                {
+                    "key": "player-idle-003"
+                },
+                {
+                    "key": "player-idle-004"
+                }
+            ]
+        },
+        {
+            "key": "player-pulling",
+            "frameRate": 12,
+            "repeat": -1,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": false,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "player-pulling-001"
+                },
+                {
+                    "key": "player-pulling-002"
+                },
+                {
+                    "key": "player-pulling-003"
+                },
+                {
+                    "key": "player-pulling-004"
+                },
+                {
+                    "key": "player-pulling-005"
+                },
+                {
+                    "key": "player-pulling-006"
+                },
+                {
+                    "key": "player-pulling-007"
+                },
+                {
+                    "key": "player-pulling-008"
+                }
+            ]
+        },
+        {
+            "key": "valuable",
+            "frameRate": 10,
+            "repeat": -1,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": false,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "valuable-001"
+                },
+                {
+                    "key": "valuable-002"
+                },
+                {
+                    "key": "valuable-003"
+                },
+                {
+                    "key": "valuable-004"
+                },
+                {
+                    "key": "valuable-005"
+                },
+                {
+                    "key": "valuable-006"
+                },
+                {
+                    "key": "valuable-007"
+                },
+                {
+                    "key": "valuable-008"
+                },
+                {
+                    "key": "valuable-009"
+                }
+            ]
+        },
+        {
+            "key": "explosion-barrel",
+            "frameRate": 16,
+            "repeat": 0,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": true,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "explosion-barrel-001"
+                },
+                {
+                    "key": "explosion-barrel-002"
+                },
+                {
+                    "key": "explosion-barrel-003"
+                },
+                {
+                    "key": "explosion-barrel-004"
+                },
+                {
+                    "key": "explosion-barrel-005"
+                },
+                {
+                    "key": "explosion-barrel-006"
+                },
+                {
+                    "key": "explosion-barrel-007"
+                },
+                {
+                    "key": "explosion-barrel-008"
+                }
+            ]
+        },
+        {
+            "key": "explosion-bomb",
+            "frameRate": 18,
+            "repeat": 0,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": true,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "explosion-bomb-001"
+                },
+                {
+                    "key": "explosion-bomb-002"
+                },
+                {
+                    "key": "explosion-bomb-003"
+                },
+                {
+                    "key": "explosion-bomb-004"
+                },
+                {
+                    "key": "explosion-bomb-005"
+                },
+                {
+                    "key": "explosion-bomb-006"
+                },
+                {
+                    "key": "explosion-bomb-007"
+                },
+                {
+                    "key": "explosion-bomb-008"
+                },
+                {
+                    "key": "explosion-bomb-009"
+                }
+            ]
+        },
+        {
+            "key": "water-effect",
+            "frameRate": 15,
+            "repeat": 0,
+            "delay": 0,
+            "repeatDelay": 0,
+            "yoyo": false,
+            "showOnStart": false,
+            "hideOnComplete": true,
+            "skipMissedFrames": true,
+            "frames": [
+                {
+                    "key": "water-effect-001"
+                },
+                {
+                    "key": "water-effect-002"
+                },
+                {
+                    "key": "water-effect-003"
+                },
+                {
+                    "key": "water-effect-004"
+                },
+                {
+                    "key": "water-effect-005"
+                },
+                {
+                    "key": "water-effect-006"
+                },
+                {
+                    "key": "water-effect-007"
+                },
+                {
+                    "key": "water-effect-008"
+                },
+                {
+                    "key": "water-effect-009"
+                },
+                {
+                    "key": "water-effect-010"
+                },
+                {
+                    "key": "water-effect-011"
+                },
+                {
+                    "key": "water-effect-012"
+                },
+                {
+                    "key": "water-effect-013"
+                },
+                {
+                    "key": "water-effect-014"
+                },
+                {
+                    "key": "water-effect-015"
+                }
+            ]
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}
