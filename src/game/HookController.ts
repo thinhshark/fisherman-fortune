@@ -172,6 +172,7 @@ export class HookController {
 	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
 	private inputEnabled = true;
+	private paused = false;
 	/** Metadata attached to the next RETRACTING state-changed emit. */
 	private pendingRetractInfo?: {
 		retractReason: RetractReason;
@@ -288,6 +289,17 @@ export class HookController {
 	}
 
 	/**
+	 * Freeze swing/cast/retract and jaw motion exactly in place.
+	 * Does not reset extension, angle, or state.
+	 */
+	setPaused(paused: boolean): void {
+		if (this.paused === paused) {
+			return;
+		}
+		this.paused = paused;
+	}
+
+	/**
 	 * If currently CASTING with no catch claimed yet, begin empty retraction.
 	 * No-op while already RETRACTING / SWINGING (caught retract stays intact).
 	 */
@@ -392,6 +404,9 @@ export class HookController {
 	}
 
 	update(_time: number, delta: number): void {
+		if (this.paused) {
+			return;
+		}
 		switch (this._state) {
 			case "SWINGING":
 				this.updateSwinging(delta);
@@ -429,8 +444,15 @@ export class HookController {
 		this.retractCompleteListeners.clear();
 	}
 
-	private handleCastInput(): void {
-		if (!this.inputEnabled) {
+	private handleCastInput(
+		_pointer?: Phaser.Input.Pointer,
+		currentlyOver?: Phaser.GameObjects.GameObject[],
+	): void {
+		if (this.paused || !this.inputEnabled) {
+			return;
+		}
+		// Do not cast through interactive HUD / pause UI.
+		if (currentlyOver && currentlyOver.length > 0) {
 			return;
 		}
 		if (this._state !== "SWINGING") {

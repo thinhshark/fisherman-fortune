@@ -14,6 +14,7 @@ import { GameOverController } from "../game/GameOverController";
 import { HudController } from "../game/HudController";
 import { ItemSpawner } from "../game/ItemSpawner";
 import { AudioController } from "../game/AudioController";
+import { PauseController } from "../game/PauseController";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -93,12 +94,16 @@ export default class Level extends Phaser.Scene {
 	private hudController!: HudController;
 	private itemSpawner!: ItemSpawner;
 	private audioController!: AudioController;
+	private pauseController!: PauseController;
 	private readonly boundGameEnding = this.handleGameEnding.bind(this);
 	private endingHandled = false;
+	/** Discard first gameplay delta after resume to avoid a large frame jump. */
+	private skipNextGameplayDelta = false;
 
 	create() {
 		this.editorCreate();
 		this.endingHandled = false;
+		this.skipNextGameplayDelta = false;
 		this.itemSpawner = this.createItemSpawner();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
@@ -111,12 +116,19 @@ export default class Level extends Phaser.Scene {
 			this,
 			this.audioController,
 		);
+		this.pauseController = new PauseController(this, this.audioController, {
+			canPause: () =>
+				this.gameSession.state === "playing" && !this.endingHandled,
+			onPausedChanged: (paused) => this.applyGameplayPaused(paused),
+			onRestart: () => this.handlePauseRestart(),
+		});
 		this.applyDisplayDepths();
 
 		this.events.on(GAME_ENDING_EVENT, this.boundGameEnding);
 
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.events.off(GAME_ENDING_EVENT, this.boundGameEnding);
+			this.pauseController.destroy();
 			this.audioController.destroy();
 			this.gameOverController.destroy();
 			this.hudController.destroy();
@@ -129,11 +141,21 @@ export default class Level extends Phaser.Scene {
 	}
 
 	update(time: number, delta: number): void {
-		this.hookController.update(time, delta);
-		this.creatureSpawner.update(time, delta);
-		this.itemSpawner.update(time, delta);
-		this.catchController.update(time, delta);
-		this.gameSession.update(time, delta);
+		if (this.pauseController?.isPaused) {
+			return;
+		}
+
+		let gameplayDelta = delta;
+		if (this.skipNextGameplayDelta) {
+			gameplayDelta = 0;
+			this.skipNextGameplayDelta = false;
+		}
+
+		this.hookController.update(time, gameplayDelta);
+		this.creatureSpawner.update(time, gameplayDelta);
+		this.itemSpawner.update(time, gameplayDelta);
+		this.catchController.update(time, gameplayDelta);
+		this.gameSession.update(time, gameplayDelta);
 
 		// After timer zero: wait until hook is safely SWINGING, then finish.
 		if (
@@ -142,6 +164,29 @@ export default class Level extends Phaser.Scene {
 		) {
 			this.gameSession.completeEnding();
 		}
+	}
+
+	private applyGameplayPaused(paused: boolean): void {
+		this.gameSession.setPaused(paused);
+		this.hookController.setPaused(paused);
+		this.creatureSpawner.setPaused(paused);
+		this.itemSpawner.setPaused(paused);
+		this.catchController.setPaused(paused);
+		this.catchFeedbackController.setPaused(paused);
+
+		if (paused) {
+			this.audioController.pauseAll();
+		} else {
+			this.audioController.resumeAll({
+				resumeWinch: this.hookController.isRetracting,
+			});
+			this.skipNextGameplayDelta = true;
+		}
+	}
+
+	private handlePauseRestart(): void {
+		// SHUTDOWN destroys PauseController without resuming old audio.
+		this.scene.restart();
 	}
 
 	private handleGameEnding(): void {

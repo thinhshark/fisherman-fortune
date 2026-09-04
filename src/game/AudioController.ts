@@ -76,6 +76,8 @@ export class AudioController {
 	private resultPlayed = false;
 	private lastTimerSecondPlayed = -1;
 	private paused = false;
+	/** Tracks whether winch should still be active after a pause resume. */
+	private hookRetracting = false;
 
 	private music?: Phaser.Sound.BaseSound;
 	private winch?: Phaser.Sound.BaseSound;
@@ -104,6 +106,14 @@ export class AudioController {
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
 
 		this.setupUnlock();
+	}
+
+	get isMusicEnabled(): boolean {
+		return this.musicEnabled;
+	}
+
+	get isSfxEnabled(): boolean {
+		return this.sfxEnabled;
 	}
 
 	setMusicEnabled(enabled: boolean): void {
@@ -141,17 +151,49 @@ export class AudioController {
 		this.winch?.pause();
 	}
 
-	resumeAll(): void {
+	/**
+	 * Resume music (if enabled) without restarting from the beginning.
+	 * Winch resumes only when the hook is still retracting and SFX is on.
+	 */
+	resumeAll(options?: { resumeWinch?: boolean }): void {
 		if (this.destroyed) {
 			return;
 		}
 		this.paused = false;
-		if (this.musicEnabled && this.music?.isPaused) {
-			this.music.resume();
+		if (this.musicEnabled) {
+			if (this.music?.isPaused) {
+				this.music.resume();
+			} else {
+				this.ensureMusicPlaying();
+			}
 		}
-		if (this.sfxEnabled && this.winch?.isPaused) {
+		const resumeWinch =
+			options?.resumeWinch ?? this.hookRetracting;
+		if (resumeWinch && this.sfxEnabled && this.winch?.isPaused) {
 			this.winch.resume();
+		} else if (!resumeWinch && this.winch?.isPaused) {
+			this.stopWinch();
 		}
+	}
+
+	/**
+	 * Drop the pause bus without resuming music/winch.
+	 * Used when GameOver takes over while a pause overlay was open.
+	 */
+	clearPauseHold(): void {
+		if (this.destroyed) {
+			return;
+		}
+		this.paused = false;
+	}
+
+	/** UI button SFX — allowed while the game audio bus is paused. */
+	playButtonSfx(): void {
+		this.playUiSfx("sfx-button", AudioSettings.uiVolume);
+	}
+
+	playPauseSfx(): void {
+		this.playUiSfx("sfx-pause", AudioSettings.uiVolume);
 	}
 
 	/** Called from GameOverController as a redundant safe trigger. */
@@ -269,6 +311,9 @@ export class AudioController {
 		}
 		const target = this.music;
 		this.scene.tweens.killTweensOf(target);
+		if (target.isPaused) {
+			target.resume();
+		}
 		this.scene.tweens.add({
 			targets: target,
 			volume: 0,
@@ -286,6 +331,8 @@ export class AudioController {
 	}
 
 	private handleHookState(payload: HookStateChangedPayload): void {
+		this.hookRetracting = payload.state === "RETRACTING";
+
 		if (this.destroyed || this.paused) {
 			return;
 		}
@@ -445,6 +492,18 @@ export class AudioController {
 		if (!this.sfxEnabled || this.destroyed || this.paused) {
 			return;
 		}
+		this.playSfxRaw(key, volume);
+	}
+
+	/** Plays even while gameplay audio is paused (pause-menu buttons). */
+	private playUiSfx(key: string, volume: number): void {
+		if (!this.sfxEnabled || this.destroyed) {
+			return;
+		}
+		this.playSfxRaw(key, volume);
+	}
+
+	private playSfxRaw(key: string, volume: number): void {
 		if (!this.scene.cache.audio.exists(key)) {
 			return;
 		}

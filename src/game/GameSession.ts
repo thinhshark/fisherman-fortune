@@ -75,6 +75,7 @@ export class GameSession {
 	private remainingMs = GameSession.DURATION_SECONDS * 1000;
 	private lastEmittedSeconds = GameSession.DURATION_SECONDS;
 	private _state: GameSessionState = "playing";
+	private paused = false;
 	private destroyed = false;
 	private finishedEmitted = false;
 	private endingEmitted = false;
@@ -107,6 +108,21 @@ export class GameSession {
 
 	get state(): GameSessionState {
 		return this._state;
+	}
+
+	get isPaused(): boolean {
+		return this.paused;
+	}
+
+	/**
+	 * Freeze the countdown without changing playing/ending/finished state.
+	 * Does not call scene.pause() — overlay stays interactive in the same scene.
+	 */
+	setPaused(paused: boolean): void {
+		if (this.destroyed || this.paused === paused) {
+			return;
+		}
+		this.paused = paused;
 	}
 
 	/**
@@ -146,7 +162,7 @@ export class GameSession {
 	}
 
 	update(_time: number, delta: number): void {
-		if (this.destroyed || this._state !== "playing") {
+		if (this.destroyed || this._state !== "playing" || this.paused) {
 			return;
 		}
 

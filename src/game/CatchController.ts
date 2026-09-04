@@ -86,6 +86,7 @@ export class CatchController {
 	private caught?: CaughtTarget;
 	private delivered = false;
 	private destroyed = false;
+	private paused = false;
 	private readonly debugGraphics?: Phaser.GameObjects.Graphics;
 
 	constructor(
@@ -110,7 +111,7 @@ export class CatchController {
 	}
 
 	update(_time: number, _delta: number): void {
-		if (this.destroyed) {
+		if (this.destroyed || this.paused) {
 			return;
 		}
 
@@ -123,6 +124,17 @@ export class CatchController {
 		}
 
 		this.drawDebug();
+	}
+
+	/**
+	 * Stop collision checks and caught-target position updates while paused.
+	 * The attached target stays where it was.
+	 */
+	setPaused(paused: boolean): void {
+		if (this.destroyed || this.paused === paused) {
+			return;
+		}
+		this.paused = paused;
 	}
 
 	destroy(): void {

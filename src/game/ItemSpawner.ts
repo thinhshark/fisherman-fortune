@@ -37,6 +37,7 @@ export class ItemSpawner {
 	private readonly claimed = new Map<string, ActiveItem>();
 	private destroyed = false;
 	private enabled = true;
+	private paused = false;
 	private nextNameIndex = 1;
 
 	private readonly spawnTop: number;
@@ -114,6 +115,9 @@ export class ItemSpawner {
 
 	update(_time: number, _delta: number): void {
 		// Stationary items — reserved for future catch / refill timing.
+		if (this.destroyed || this.paused || !this.enabled) {
+			return;
+		}
 	}
 
 	/**
@@ -124,6 +128,18 @@ export class ItemSpawner {
 			return;
 		}
 		this.enabled = enabled;
+	}
+
+	/**
+	 * Stop refill/spawning and pause animated items (e.g. valuable).
+	 * Static images are unchanged.
+	 */
+	setPaused(paused: boolean): void {
+		if (this.destroyed || this.paused === paused) {
+			return;
+		}
+		this.paused = paused;
+		this.setItemAnimsPaused(paused);
 	}
 
 	getCatchableItems(): readonly CatchableItem[] {
@@ -173,7 +189,7 @@ export class ItemSpawner {
 
 	/** Fill back up to TARGET_ACTIVE after claimed items are removed. */
 	refillMissingItems(): void {
-		if (this.destroyed || !this.enabled) {
+		if (this.destroyed || !this.enabled || this.paused) {
 			return;
 		}
 		while (this.active.size < ItemSpawner.TARGET_ACTIVE) {
@@ -281,11 +297,38 @@ export class ItemSpawner {
 			object instanceof Phaser.GameObjects.Sprite
 		) {
 			object.play(definition.animationKey);
+			if (this.paused) {
+				object.anims.pause();
+			}
 		}
 
 		const entry: ActiveItem = { object, definition };
 		this.active.set(object.name, entry);
 		return entry;
+	}
+
+	private setItemAnimsPaused(paused: boolean): void {
+		const apply = (entry: ActiveItem): void => {
+			const object = entry.object;
+			if (
+				!(object instanceof Phaser.GameObjects.Sprite) ||
+				!object.active ||
+				!object.anims
+			) {
+				return;
+			}
+			if (paused) {
+				object.anims.pause();
+			} else if (object.anims.isPaused) {
+				object.anims.resume();
+			}
+		};
+		for (const entry of this.active.values()) {
+			apply(entry);
+		}
+		for (const entry of this.claimed.values()) {
+			apply(entry);
+		}
 	}
 
 	private createItemObject(definition: ItemDefinition): ItemGameObject {

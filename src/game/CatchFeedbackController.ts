@@ -40,12 +40,31 @@ export class CatchFeedbackController {
 	private readonly activeLabels = new Set<Phaser.GameObjects.Text>();
 	private readonly activeChains = new Set<Phaser.Tweens.TweenChain>();
 	private destroyed = false;
+	private paused = false;
 
 	constructor(scene: Phaser.Scene) {
 		this.scene = scene;
 		scene.events.on(SCORE_CHANGED_EVENT, this.boundScoreChanged);
 		scene.events.on(TIME_BONUS_EVENT, this.boundTimeBonus);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
+	}
+
+	/**
+	 * Pause active reward-feedback tweens in place; resume from existing progress.
+	 * Does not destroy or restart chains.
+	 */
+	setPaused(paused: boolean): void {
+		if (this.destroyed || this.paused === paused) {
+			return;
+		}
+		this.paused = paused;
+		for (const chain of this.activeChains) {
+			if (paused) {
+				chain.pause();
+			} else {
+				chain.resume();
+			}
+		}
 	}
 
 	destroy(): void {
@@ -177,6 +196,9 @@ export class CatchFeedbackController {
 		});
 
 		this.activeChains.add(chain);
+		if (this.paused) {
+			chain.pause();
+		}
 	}
 
 	private clampDelivery(

@@ -39,6 +39,7 @@ export class CreatureSpawner {
 	private spawnTimer?: Phaser.Time.TimerEvent;
 	private destroyed = false;
 	private enabled = true;
+	private paused = false;
 	private nextNameIndex = 1;
 
 	private readonly spawnTop: number;
@@ -122,9 +123,26 @@ export class CreatureSpawner {
 		if (!enabled) {
 			this.spawnTimer?.remove(false);
 			this.spawnTimer = undefined;
-		} else if (!this.spawnTimer) {
+		} else if (!this.spawnTimer && !this.paused) {
 			this.scheduleSpawn(CreatureSpawner.MIN_SPAWN_INTERVAL_MS);
 		}
+	}
+
+	/**
+	 * Freeze movement/spawning and pause active creature animations in place.
+	 * Resuming continues the same animations from their current frame.
+	 */
+	setPaused(paused: boolean): void {
+		if (this.destroyed || this.paused === paused) {
+			return;
+		}
+		this.paused = paused;
+
+		if (this.spawnTimer) {
+			this.spawnTimer.paused = paused;
+		}
+
+		this.setCreatureAnimsPaused(paused);
 	}
 
 	/**
@@ -174,8 +192,8 @@ export class CreatureSpawner {
 			return;
 		}
 
-		// Freeze in place while disabled (end-of-game / result screen).
-		if (!this.enabled) {
+		// Freeze in place while disabled (end-of-game / result screen) or paused.
+		if (!this.enabled || this.paused) {
 			return;
 		}
 
@@ -239,7 +257,7 @@ export class CreatureSpawner {
 
 		this.spawnTimer?.remove(false);
 		this.spawnTimer = this.scene.time.delayedCall(delayMs, () => {
-			if (this.destroyed || !this.enabled) {
+			if (this.destroyed || !this.enabled || this.paused) {
 				return;
 			}
 			this.trySpawn();
@@ -249,12 +267,36 @@ export class CreatureSpawner {
 			);
 			this.scheduleSpawn(next);
 		});
+		if (this.paused && this.spawnTimer) {
+			this.spawnTimer.paused = true;
+		}
+	}
+
+	private setCreatureAnimsPaused(paused: boolean): void {
+		const apply = (entry: ActiveCreature): void => {
+			const sprite = entry.sprite;
+			if (!sprite.active || !sprite.anims) {
+				return;
+			}
+			if (paused) {
+				sprite.anims.pause();
+			} else if (sprite.anims.isPaused) {
+				sprite.anims.resume();
+			}
+		};
+		for (const entry of this.active.values()) {
+			apply(entry);
+		}
+		for (const entry of this.claimed.values()) {
+			apply(entry);
+		}
 	}
 
 	private trySpawn(): void {
 		if (
 			this.destroyed ||
 			!this.enabled ||
+			this.paused ||
 			this.active.size >= CreatureSpawner.MAX_ACTIVE
 		) {
 			return;
@@ -297,6 +339,9 @@ export class CreatureSpawner {
 			(movingLeft && definition.defaultFacing === "right");
 		sprite.setFlipX(shouldFlip);
 		sprite.play(definition.animationKey);
+		if (this.paused) {
+			sprite.anims.pause();
+		}
 
 		let debugLabel: Phaser.GameObjects.Text | undefined;
 		if (CreatureSpawner.SHOW_CREATURE_IDS) {
