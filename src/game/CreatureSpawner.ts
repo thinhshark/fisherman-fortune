@@ -38,6 +38,7 @@ export class CreatureSpawner {
 	private readonly claimed = new Map<string, ActiveCreature>();
 	private spawnTimer?: Phaser.Time.TimerEvent;
 	private destroyed = false;
+	private enabled = true;
 	private nextNameIndex = 1;
 
 	private readonly spawnTop: number;
@@ -111,6 +112,22 @@ export class CreatureSpawner {
 	}
 
 	/**
+	 * When disabled, stop scheduling new spawns and freeze active swimmers.
+	 */
+	setEnabled(enabled: boolean): void {
+		if (this.destroyed) {
+			return;
+		}
+		this.enabled = enabled;
+		if (!enabled) {
+			this.spawnTimer?.remove(false);
+			this.spawnTimer = undefined;
+		} else if (!this.spawnTimer) {
+			this.scheduleSpawn(CreatureSpawner.MIN_SPAWN_INTERVAL_MS);
+		}
+	}
+
+	/**
 	 * Remove a swimming creature from movement/cleanup tracking.
 	 * Returns false if it is already claimed, missing, or inactive.
 	 */
@@ -154,6 +171,11 @@ export class CreatureSpawner {
 
 	update(_time: number, delta: number): void {
 		if (this.destroyed) {
+			return;
+		}
+
+		// Freeze in place while disabled (end-of-game / result screen).
+		if (!this.enabled) {
 			return;
 		}
 
@@ -211,13 +233,13 @@ export class CreatureSpawner {
 	}
 
 	private scheduleSpawn(delayMs: number): void {
-		if (this.destroyed) {
+		if (this.destroyed || !this.enabled) {
 			return;
 		}
 
 		this.spawnTimer?.remove(false);
 		this.spawnTimer = this.scene.time.delayedCall(delayMs, () => {
-			if (this.destroyed) {
+			if (this.destroyed || !this.enabled) {
 				return;
 			}
 			this.trySpawn();
@@ -230,7 +252,11 @@ export class CreatureSpawner {
 	}
 
 	private trySpawn(): void {
-		if (this.destroyed || this.active.size >= CreatureSpawner.MAX_ACTIVE) {
+		if (
+			this.destroyed ||
+			!this.enabled ||
+			this.active.size >= CreatureSpawner.MAX_ACTIVE
+		) {
 			return;
 		}
 

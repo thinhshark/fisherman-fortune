@@ -14,17 +14,24 @@ export const SCORE_CHANGED_EVENT = "score-changed";
 export const TIME_CHANGED_EVENT = "time-changed";
 export const TIME_BONUS_EVENT = "time-bonus";
 export const BONUS_COLLECTED_EVENT = "bonus-collected";
+/** Timer hit zero; gameplay is winding down (no new casts). */
+export const GAME_ENDING_EVENT = "game-ending";
+/** Hook is safely at rest; show result overlay. */
 export const GAME_FINISHED_EVENT = "game-finished";
 
-export type GameSessionState = "playing" | "finished";
+export type GameSessionState = "playing" | "ending" | "finished";
+export type ScoreSourceKind = "creature" | "item";
 
 export interface ScoreChangedPayload {
 	totalScore: number;
 	delta: number;
-	creatureId?: string;
+	sourceKind: ScoreSourceKind;
+	/** Creature or item id. */
+	sourceId: string;
 	category?: CreatureCategory;
-	itemId?: string;
 	effectType?: ItemEffectType;
+	deliveryX: number;
+	deliveryY: number;
 }
 
 export interface TimeChangedPayload {
@@ -32,34 +39,34 @@ export interface TimeChangedPayload {
 }
 
 export interface TimeBonusPayload {
-	seconds: number;
+	secondsAdded: number;
+	sourceId: string;
+	deliveryX: number;
+	deliveryY: number;
 	remainingSeconds: number;
-	itemId: string;
 }
 
 export interface BonusCollectedPayload {
 	itemId: string;
 	effectType: ItemEffectType;
+	deliveryX: number;
+	deliveryY: number;
 }
 
 export interface GameFinishedPayload {
 	finalScore: number;
 }
 
-export interface GameSessionOptions {
-	/** Boat / hook anchor for floating delivery feedback. */
-	feedbackAnchor?: Readonly<{ x: number; y: number }>;
-}
-
 /**
- * Round session: score + countdown. Does not stop gameplay when finished;
- * only emits game-finished once and clamps the timer at zero.
+ * Round session: score + countdown.
+ * Floating reward / time text is owned exclusively by CatchFeedbackController.
+ *
+ * States: playing → ending (timer 0) → finished (hook at rest).
  */
 export class GameSession {
 	static readonly DURATION_SECONDS = 100;
 
 	private readonly scene: Phaser.Scene;
-	private readonly feedbackAnchor: { x: number; y: number };
 	private readonly boundCreatureDelivered =
 		this.handleCreatureDelivered.bind(this);
 	private readonly boundItemDelivered = this.handleItemDelivered.bind(this);
@@ -70,13 +77,10 @@ export class GameSession {
 	private _state: GameSessionState = "playing";
 	private destroyed = false;
 	private finishedEmitted = false;
+	private endingEmitted = false;
 
-	constructor(scene: Phaser.Scene, options?: GameSessionOptions) {
+	constructor(scene: Phaser.Scene) {
 		this.scene = scene;
-		this.feedbackAnchor = {
-			x: options?.feedbackAnchor?.x ?? scene.scale.width * 0.5,
-			y: options?.feedbackAnchor?.y ?? 280,
-		};
 		scene.events.on(CREATURE_DELIVERED_EVENT, this.boundCreatureDelivered);
 		scene.events.on(ITEM_DELIVERED_EVENT, this.boundItemDelivered);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
@@ -97,16 +101,20 @@ export class GameSession {
 		return this._state === "finished";
 	}
 
+	get isEnding(): boolean {
+		return this._state === "ending";
+	}
+
 	get state(): GameSessionState {
 		return this._state;
 	}
 
 	/**
 	 * Add bonus seconds to the countdown. Rejects invalid / negative / NaN.
-	 * Updates the displayed whole second immediately.
+	 * Only applies while playing (not during ending/finished grace).
 	 */
 	addTime(seconds: number): void {
-		if (this.destroyed) {
+		if (this.destroyed || this._state !== "playing") {
 			return;
 		}
 		if (
@@ -125,6 +133,18 @@ export class GameSession {
 		} satisfies TimeChangedPayload);
 	}
 
+	/**
+	 * Called by Level when the hook is safely SWINGING after ending began.
+	 * Transitions ending → finished and emits game-finished once.
+	 */
+	completeEnding(): void {
+		if (this.destroyed || this._state !== "ending") {
+			return;
+		}
+		this._state = "finished";
+		this.emitFinishedOnce();
+	}
+
 	update(_time: number, delta: number): void {
 		if (this.destroyed || this._state !== "playing") {
 			return;
@@ -140,7 +160,6 @@ export class GameSession {
 		}
 
 		if (this.remainingMs <= 0) {
-			this._state = "finished";
 			this.remainingMs = 0;
 			if (this.lastEmittedSeconds !== 0) {
 				this.lastEmittedSeconds = 0;
@@ -148,7 +167,7 @@ export class GameSession {
 					remainingSeconds: 0,
 				} satisfies TimeChangedPayload);
 			}
-			this.emitFinishedOnce();
+			this.beginEnding();
 		}
 	}
 
@@ -169,8 +188,21 @@ export class GameSession {
 		);
 	}
 
+	private beginEnding(): void {
+		if (this._state !== "playing") {
+			return;
+		}
+		this._state = "ending";
+		if (!this.endingEmitted) {
+			this.endingEmitted = true;
+			this.scene.events.emit(GAME_ENDING_EVENT, {
+				finalScore: this._score,
+			});
+		}
+	}
+
 	private handleCreatureDelivered(payload: CreatureDeliveredPayload): void {
-		if (this.destroyed) {
+		if (this.destroyed || this._state === "finished") {
 			return;
 		}
 
@@ -185,14 +217,20 @@ export class GameSession {
 		const delta =
 			balance.rewardOperation === "subtract" ? -roll : roll;
 
-		this.applyScoreDelta(delta, {
-			creatureId: payload.id,
+		this._score = Math.max(0, this._score + delta);
+		this.scene.events.emit(SCORE_CHANGED_EVENT, {
+			totalScore: this._score,
+			delta,
+			sourceKind: "creature",
+			sourceId: payload.id,
 			category: payload.category,
-		});
+			deliveryX: payload.deliveryX,
+			deliveryY: payload.deliveryY,
+		} satisfies ScoreChangedPayload);
 	}
 
 	private handleItemDelivered(payload: ItemDeliveredPayload): void {
-		if (this.destroyed) {
+		if (this.destroyed || this._state === "finished") {
 			return;
 		}
 
@@ -213,29 +251,37 @@ export class GameSession {
 				);
 				const delta =
 					balance.rewardOperation === "subtract" ? -roll : roll;
-				this.applyScoreDelta(delta, {
-					itemId: payload.id,
+				this._score = Math.max(0, this._score + delta);
+				this.scene.events.emit(SCORE_CHANGED_EVENT, {
+					totalScore: this._score,
+					delta,
+					sourceKind: "item",
+					sourceId: payload.id,
 					effectType: balance.effectType,
-				});
+					deliveryX: payload.deliveryX,
+					deliveryY: payload.deliveryY,
+				} satisfies ScoreChangedPayload);
 				break;
 			}
 			case "time": {
 				const bonus = balance.timeBonusSeconds;
 				this.addTime(bonus);
 				this.scene.events.emit(TIME_BONUS_EVENT, {
-					seconds: bonus,
+					secondsAdded: bonus,
+					sourceId: payload.id,
+					deliveryX: payload.deliveryX,
+					deliveryY: payload.deliveryY,
 					remainingSeconds: this.remainingSeconds,
-					itemId: payload.id,
 				} satisfies TimeBonusPayload);
-				this.spawnFloatingFeedback(`+${bonus}s`, "#ffe566");
 				break;
 			}
 			case "bomb":
 			case "power": {
-				// PENDING: bomb / power gameplay not implemented yet.
 				this.scene.events.emit(BONUS_COLLECTED_EVENT, {
 					itemId: payload.id,
 					effectType: balance.effectType,
+					deliveryX: payload.deliveryX,
+					deliveryY: payload.deliveryY,
 				} satisfies BonusCollectedPayload);
 				break;
 			}
@@ -246,66 +292,6 @@ export class GameSession {
 				);
 			}
 		}
-	}
-
-	private applyScoreDelta(
-		delta: number,
-		meta: {
-			creatureId?: string;
-			category?: CreatureCategory;
-			itemId?: string;
-			effectType?: ItemEffectType;
-		},
-	): void {
-		this._score = Math.max(0, this._score + delta);
-		this.scene.events.emit(SCORE_CHANGED_EVENT, {
-			totalScore: this._score,
-			delta,
-			creatureId: meta.creatureId,
-			category: meta.category,
-			itemId: meta.itemId,
-			effectType: meta.effectType,
-		} satisfies ScoreChangedPayload);
-
-		if (delta !== 0) {
-			const label = delta > 0 ? `+${delta}` : `${delta}`;
-			const color = delta > 0 ? "#5dff7a" : "#ff5d5d";
-			this.spawnFloatingFeedback(label, color);
-		}
-	}
-
-	/**
-	 * Brief floating label near the boat (below HUD). Rise ~45px, fade ~700ms.
-	 */
-	private spawnFloatingFeedback(text: string, color: string): void {
-		if (this.destroyed) {
-			return;
-		}
-
-		const startY = this.feedbackAnchor.y + 36;
-		const label = this.scene.add
-			.text(this.feedbackAnchor.x, startY, text, {
-				fontFamily: "Luckiest Guy",
-				fontSize: "28px",
-				color,
-				stroke: "#1a1208",
-				strokeThickness: 5,
-				align: "center",
-			})
-			.setOrigin(0.5, 0.5)
-			.setDepth(900)
-			.setScrollFactor(0);
-
-		this.scene.tweens.add({
-			targets: label,
-			y: startY - 45,
-			alpha: 0,
-			duration: 700,
-			ease: "Cubic.easeOut",
-			onComplete: () => {
-				label.destroy();
-			},
-		});
 	}
 
 	private emitFinishedOnce(): void {

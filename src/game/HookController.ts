@@ -160,6 +160,7 @@ export class HookController {
 	private retractReason: RetractReason = "empty";
 	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
+	private inputEnabled = true;
 
 	private jawLeftFromDeg = 0;
 	private jawLeftToDeg = 0;
@@ -255,6 +256,29 @@ export class HookController {
 
 	get isRetracting(): boolean {
 		return this._state === "RETRACTING";
+	}
+
+	get isAtRest(): boolean {
+		return this._state === "SWINGING" && this.extension <= 0;
+	}
+
+	/**
+	 * Enable/disable cast input. Does not interrupt an active cast or retract.
+	 */
+	setInputEnabled(enabled: boolean): void {
+		this.inputEnabled = enabled;
+	}
+
+	/**
+	 * If currently CASTING with no catch claimed yet, begin empty retraction.
+	 * No-op while already RETRACTING / SWINGING (caught retract stays intact).
+	 */
+	forceEmptyRetractIfCasting(): boolean {
+		if (this._state !== "CASTING") {
+			return false;
+		}
+		this.beginEmptyRetracting();
+		return true;
 	}
 
 	/**
@@ -382,6 +406,9 @@ export class HookController {
 	}
 
 	private handleCastInput(): void {
+		if (!this.inputEnabled) {
+			return;
+		}
 		if (this._state !== "SWINGING") {
 			return;
 		}

@@ -28,6 +28,9 @@ export interface CreatureDeliveredPayload {
 	value: number;
 	weight: CreatureWeight;
 	isToxic: boolean;
+	/** World position of the sprite immediately before destroy. */
+	deliveryX: number;
+	deliveryY: number;
 }
 
 export interface ItemDeliveredPayload {
@@ -39,6 +42,9 @@ export interface ItemDeliveredPayload {
 	timeBonusSeconds: number;
 	weight: ItemWeight;
 	retractSpeed: number;
+	/** World position of the item immediately before destroy. */
+	deliveryX: number;
+	deliveryY: number;
 }
 
 type CaughtTarget =
@@ -288,12 +294,16 @@ export class CatchController {
 
 		if (target.kind === "creature") {
 			const { sprite, definition } = target;
+			const deliveryX = sprite.x;
+			const deliveryY = sprite.y;
 			const payload: CreatureDeliveredPayload = {
 				id: definition.id,
 				category: definition.category,
 				value: Number(sprite.getData("value") ?? 0),
 				weight: definition.weight,
 				isToxic: definition.isToxic,
+				deliveryX,
+				deliveryY,
 			};
 			this.creatureSpawner.destroyClaimedCreature(sprite);
 			this.scene.events.emit(CREATURE_DELIVERED_EVENT, payload);
@@ -301,6 +311,8 @@ export class CatchController {
 		}
 
 		const { object, definition } = target;
+		const deliveryX = object.x;
+		const deliveryY = object.y;
 		const payload: ItemDeliveredPayload = {
 			id: definition.id,
 			rewardMin: definition.rewardMin,
@@ -310,9 +322,12 @@ export class CatchController {
 			timeBonusSeconds: definition.timeBonusSeconds,
 			weight: definition.weight,
 			retractSpeed: definition.retractSpeed,
+			deliveryX,
+			deliveryY,
 		};
 		this.itemSpawner.destroyClaimedItem(object);
 		this.scene.events.emit(ITEM_DELIVERED_EVENT, payload);
+		// Graceful end-of-game: ItemSpawner.setEnabled(false) no-ops refill.
 		this.itemSpawner.refillMissingItems();
 	}
 

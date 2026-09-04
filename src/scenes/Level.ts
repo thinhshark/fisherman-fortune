@@ -8,7 +8,9 @@ import Phaser from "phaser";
 import { HookController } from "../game/HookController";
 import { CreatureSpawner } from "../game/CreatureSpawner";
 import { CatchController } from "../game/CatchController";
-import { GameSession } from "../game/GameSession";
+import { CatchFeedbackController } from "../game/CatchFeedbackController";
+import { GameSession, GAME_ENDING_EVENT } from "../game/GameSession";
+import { GameOverController } from "../game/GameOverController";
 import { HudController } from "../game/HudController";
 import { ItemSpawner } from "../game/ItemSpawner";
 /* END-USER-IMPORTS */
@@ -84,27 +86,34 @@ export default class Level extends Phaser.Scene {
 	private hookController!: HookController;
 	private creatureSpawner!: CreatureSpawner;
 	private catchController!: CatchController;
+	private catchFeedbackController!: CatchFeedbackController;
 	private gameSession!: GameSession;
+	private gameOverController!: GameOverController;
 	private hudController!: HudController;
 	private itemSpawner!: ItemSpawner;
+	private readonly boundGameEnding = this.handleGameEnding.bind(this);
+	private endingHandled = false;
 
 	create() {
 		this.editorCreate();
+		this.endingHandled = false;
 		this.itemSpawner = this.createItemSpawner();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
 		this.catchController = this.createCatchController();
-		this.gameSession = new GameSession(this, {
-			feedbackAnchor: {
-				x: this.rope?.x ?? this.scale.width * 0.5,
-				y: this.rope?.y ?? 289,
-			},
-		});
+		this.gameSession = new GameSession(this);
+		this.catchFeedbackController = new CatchFeedbackController(this);
 		this.hudController = new HudController(this);
+		this.gameOverController = new GameOverController(this);
 		this.applyDisplayDepths();
 
+		this.events.on(GAME_ENDING_EVENT, this.boundGameEnding);
+
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			this.events.off(GAME_ENDING_EVENT, this.boundGameEnding);
+			this.gameOverController.destroy();
 			this.hudController.destroy();
+			this.catchFeedbackController.destroy();
 			this.gameSession.destroy();
 			this.catchController.destroy();
 			this.creatureSpawner.destroy();
@@ -118,6 +127,37 @@ export default class Level extends Phaser.Scene {
 		this.itemSpawner.update(time, delta);
 		this.catchController.update(time, delta);
 		this.gameSession.update(time, delta);
+
+		// After timer zero: wait until hook is safely SWINGING, then finish.
+		if (
+			this.gameSession.isEnding &&
+			this.hookController.isAtRest
+		) {
+			this.gameSession.completeEnding();
+		}
+	}
+
+	private handleGameEnding(): void {
+		if (this.endingHandled) {
+			return;
+		}
+		this.endingHandled = true;
+
+		this.hookController.setInputEnabled(false);
+		this.creatureSpawner.setEnabled(false);
+		this.itemSpawner.setEnabled(false);
+
+		if (this.hookController.state === "SWINGING") {
+			this.gameSession.completeEnding();
+			return;
+		}
+
+		if (this.hookController.state === "CASTING") {
+			// Empty cast: pull back. If CatchController already claimed a target,
+			// state is RETRACTING and this no-ops.
+			this.hookController.forceEmptyRetractIfCasting();
+		}
+		// RETRACTING: continue; CatchController delivers once at boat.
 	}
 
 	private createHookController(): HookController {
@@ -166,7 +206,7 @@ export default class Level extends Phaser.Scene {
 		);
 	}
 
-	/** Background < items < creatures < player / hook assembly. HUD is depth 1000. */
+	/** Background < items < creatures < player / hook. HUD 1000. Overlay 2000+. */
 	private applyDisplayDepths(): void {
 		this.gameBackground?.setDepth(0);
 		this.water?.setDepth(1);

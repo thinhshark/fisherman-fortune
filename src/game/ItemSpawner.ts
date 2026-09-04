@@ -36,6 +36,7 @@ export class ItemSpawner {
 	private readonly active = new Map<string, ActiveItem>();
 	private readonly claimed = new Map<string, ActiveItem>();
 	private destroyed = false;
+	private enabled = true;
 	private nextNameIndex = 1;
 
 	private readonly spawnTop: number;
@@ -115,6 +116,16 @@ export class ItemSpawner {
 		// Stationary items — reserved for future catch / refill timing.
 	}
 
+	/**
+	 * When disabled, skip refill (end-of-game). Existing items stay put.
+	 */
+	setEnabled(enabled: boolean): void {
+		if (this.destroyed) {
+			return;
+		}
+		this.enabled = enabled;
+	}
+
 	getCatchableItems(): readonly CatchableItem[] {
 		const result: CatchableItem[] = [];
 		for (const entry of this.active.values()) {
@@ -162,7 +173,7 @@ export class ItemSpawner {
 
 	/** Fill back up to TARGET_ACTIVE after claimed items are removed. */
 	refillMissingItems(): void {
-		if (this.destroyed) {
+		if (this.destroyed || !this.enabled) {
 			return;
 		}
 		while (this.active.size < ItemSpawner.TARGET_ACTIVE) {
