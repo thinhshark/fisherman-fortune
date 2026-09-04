@@ -175,6 +175,7 @@ function buildCreature(
 	id: string,
 	category: CreatureCategory,
 	animSuffix: "swim" | "walk",
+	defaultFacing: Facing,
 ): CreatureDefinition {
 	const sheet = CATEGORY_SHEET_CONFIG[category];
 	const animationKey = `${id}-${animSuffix}`;
@@ -190,12 +191,53 @@ function buildCreature(
 		frequencyWeight: FREQUENCY_WEIGHT[sheet.frequencyLabel],
 		frequencyLabel: sheet.frequencyLabel,
 		spawnZone: sheet.spawnZones,
-		defaultFacing: "right",
+		defaultFacing,
 		isCrab: sheet.isCrab,
 		isToxic: sheet.isToxic,
 		displayScale: CATEGORY_DISPLAY_SCALE[category],
 	};
 }
+
+/**
+ * Per-asset facing from first animation frame inspection.
+ * Crabs are front-facing/symmetrical; Construct Bullet speed is -30 (left)
+ * with no Mirrored flag, so source art is treated as facing left.
+ */
+const DEFAULT_FACING_BY_ID: Readonly<Record<string, Facing>> = {
+	"small-fish-01": "left",
+	"small-fish-02": "left",
+	"small-fish-03": "right",
+	"small-fish-04": "left",
+	"small-fish-05": "left",
+	"small-fish-06": "right",
+	"small-fish-07": "left",
+	"small-fish-08": "left",
+	"small-fish-09": "right",
+	"small-fish-10": "right",
+	"jelly-01": "left",
+	"jelly-02": "right",
+	"jelly-03": "left",
+	"jelly-04": "right",
+	"jelly-05": "left",
+	"jelly-06": "right",
+	"jelly-07": "right",
+	"jelly-08": "left",
+	"jelly-09": "right",
+	"big-fish-01": "left",
+	"big-fish-02": "right",
+	"big-fish-03": "left",
+	"big-fish-04": "right",
+	"big-fish-05": "left",
+	"big-fish-06": "right",
+	"toxic-fish-01": "left",
+	"toxic-fish-02": "right",
+	"toxic-fish-03": "left",
+	"toxic-fish-04": "right",
+	"normal-crab-01": "left",
+	"normal-crab-02": "left",
+	"rare-crab-01": "left",
+	"rare-crab-02": "left",
+};
 
 function numbered(
 	prefix: string,
@@ -206,7 +248,11 @@ function numbered(
 	const list: CreatureDefinition[] = [];
 	for (let i = 1; i <= count; i += 1) {
 		const id = `${prefix}-${String(i).padStart(2, "0")}`;
-		list.push(buildCreature(id, category, animSuffix));
+		const facing = DEFAULT_FACING_BY_ID[id];
+		if (!facing) {
+			throw new Error(`Missing defaultFacing for creature id: ${id}`);
+		}
+		list.push(buildCreature(id, category, animSuffix, facing));
 	}
 	return list;
 }

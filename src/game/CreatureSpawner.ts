@@ -11,6 +11,8 @@ export interface ActiveCreature {
 	definition: CreatureDefinition;
 	/** +1 right, -1 left */
 	direction: 1 | -1;
+	/** Optional debug label; destroyed with the creature. */
+	debugLabel?: Phaser.GameObjects.Text;
 }
 
 /**
@@ -25,6 +27,8 @@ export class CreatureSpawner {
 	private static readonly EDGE_PADDING_PX = 20;
 	private static readonly VERTICAL_MARGIN_PX = 40;
 	private static readonly CREATURE_DEPTH = 5;
+	/** Dev-only: show catalog IDs above creatures. Keep false in normal play. */
+	private static readonly SHOW_CREATURE_IDS = false;
 
 	private readonly scene: Phaser.Scene;
 	private readonly active = new Map<string, ActiveCreature>();
@@ -110,8 +114,11 @@ export class CreatureSpawner {
 		const toDestroy: string[] = [];
 
 		for (const [key, entry] of this.active) {
-			const { sprite, definition, direction } = entry;
+			const { sprite, definition, direction, debugLabel } = entry;
 			sprite.x += definition.movementSpeed * direction * deltaSec;
+			if (debugLabel) {
+				debugLabel.setPosition(sprite.x, sprite.y - sprite.displayHeight * 0.5 - 8);
+			}
 
 			const halfW = sprite.displayWidth * 0.5;
 			const fullyLeft = sprite.x + halfW < -CreatureSpawner.EDGE_PADDING_PX;
@@ -182,6 +189,7 @@ export class CreatureSpawner {
 		}
 
 		const movingRight = Math.random() < 0.5;
+		const movingLeft = !movingRight;
 		const direction: 1 | -1 = movingRight ? 1 : -1;
 
 		const sprite = this.scene.add.sprite(
@@ -206,11 +214,28 @@ export class CreatureSpawner {
 		const spawnY = this.pickSpawnY(definition, sprite.displayHeight);
 
 		sprite.setPosition(spawnX, spawnY);
-		sprite.setFlipX(!movingRight);
+
+		const shouldFlip =
+			(movingRight && definition.defaultFacing === "left") ||
+			(movingLeft && definition.defaultFacing === "right");
+		sprite.setFlipX(shouldFlip);
 		sprite.play(definition.animationKey);
 
+		let debugLabel: Phaser.GameObjects.Text | undefined;
+		if (CreatureSpawner.SHOW_CREATURE_IDS) {
+			debugLabel = this.scene.add
+				.text(spawnX, spawnY - sprite.displayHeight * 0.5 - 8, definition.id, {
+					fontFamily: "monospace",
+					fontSize: "12px",
+					color: "#ffffff",
+					backgroundColor: "#000000aa",
+				})
+				.setOrigin(0.5, 1)
+				.setDepth(CreatureSpawner.CREATURE_DEPTH + 1);
+		}
+
 		const key = sprite.name;
-		this.active.set(key, { sprite, definition, direction });
+		this.active.set(key, { sprite, definition, direction, debugLabel });
 	}
 
 	private pickSpawnY(
@@ -263,6 +288,7 @@ export class CreatureSpawner {
 			return;
 		}
 		this.active.delete(key);
+		entry.debugLabel?.destroy();
 		entry.sprite.destroy();
 	}
 
