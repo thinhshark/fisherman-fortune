@@ -1,13 +1,23 @@
 /**
- * Creature definitions derived from the Fisherman Fortune Google Sheets
- * (Fishes + Fishes 2 + Crabs) and mapped onto Phaser animation keys.
+ * Creature definitions: visual/identity metadata + gameplay numbers from
+ * `config/CreatureBalance` (the editable per-creature balance file).
  *
- * Speed labels are qualitative in the sheet (Fast / Medium / Slow).
- * Construct Bullet speeds were ~30–140 px/s at 1920×1080 and did not match
- * the sheet’s Fast>Medium>Slow intent (small fish were slower bullets there).
- * We convert sheet labels through SPEED_LABEL_TO_PX_PER_SEC_AT_1920, then
- * multiply by SCENE_SPEED_SCALE (1280/1920) for the Phaser scene.
+ * Speed labels remain qualitative sheet metadata (Fast / Medium / Slow).
+ * Construct Bullet speeds were ~30–140 px/s at 1920×1080; balance stores the
+ * Phaser-resolution movement speeds directly.
  */
+
+import {
+	CREATURE_BALANCE,
+	getCreatureBalance,
+	type CreatureBalanceEntry,
+	type CreatureWeight,
+	type SpawnZoneLabel,
+} from "./config/CreatureBalance";
+
+export type { CreatureWeight, SpawnZoneLabel };
+/** @deprecated Use `CreatureWeight`. */
+export type WeightLabel = CreatureWeight;
 
 export type CreatureCategory =
 	| "Small Fish"
@@ -18,20 +28,15 @@ export type CreatureCategory =
 	| "Rare crab";
 
 export type SpeedLabel = "Fast" | "Medium" | "Slow";
-export type CreatureWeight = "Light" | "Medium" | "Heavy";
-/** @deprecated Use `CreatureWeight`. */
-export type WeightLabel = CreatureWeight;
 export type FrequencyLabel = "Often" | "Normal" | "Medium" | "Seldom";
-export type SpawnZoneLabel = "Upper" | "Middle" | "Lower";
 export type Facing = "right" | "left";
 
 /** Construct layout resolution → Phaser Level resolution. */
 export const SCENE_SPEED_SCALE = 1280 / 1920;
 
 /**
- * Spreadsheet speed labels → px/s at Construct 1920×1080, chosen so
- * Fast > Medium > Slow while staying in the same order of magnitude as
- * Construct Bullet speeds (~30–140).
+ * Spreadsheet speed labels → px/s at Construct 1920×1080 (reference only;
+ * live movement speeds come from CreatureBalance).
  */
 export const SPEED_LABEL_TO_PX_PER_SEC_AT_1920: Record<SpeedLabel, number> = {
 	Fast: 120,
@@ -39,7 +44,7 @@ export const SPEED_LABEL_TO_PX_PER_SEC_AT_1920: Record<SpeedLabel, number> = {
 	Slow: 45,
 };
 
-/** Frequency labels → relative spawn weights. */
+/** Frequency labels → relative spawn weights (reference; live weights in balance). */
 export const FREQUENCY_WEIGHT: Record<FrequencyLabel, number> = {
 	Often: 5,
 	Normal: 3,
@@ -48,7 +53,7 @@ export const FREQUENCY_WEIGHT: Record<FrequencyLabel, number> = {
 };
 
 /**
- * Uniform display scales (Construct layout avg × SCENE_SPEED_SCALE).
+ * Uniform display scales (reference; live scales come from CreatureBalance).
  * Toxic fish reuse Big Fish art sizes → big-fish scale.
  */
 export const CATEGORY_DISPLAY_SCALE: Record<CreatureCategory, number> = {
@@ -61,7 +66,7 @@ export const CATEGORY_DISPLAY_SCALE: Record<CreatureCategory, number> = {
 };
 
 export interface CreatureValueSpec {
-	/** Original spreadsheet cell text. */
+	/** Original spreadsheet cell text (legacy; scoring uses CreatureBalance). */
 	raw: string;
 	min: number;
 	max: number;
@@ -84,11 +89,13 @@ export interface CreatureDefinition {
 	textureKey: string;
 	animationKey: string;
 	value: CreatureValueSpec;
-	/** Pixels per second at the Phaser scene resolution. */
+	/** Pixels per second at the Phaser scene resolution (from CreatureBalance). */
 	movementSpeed: number;
 	/** Raw spreadsheet speed label. */
 	speedLabel: SpeedLabel;
 	weight: CreatureWeight;
+	/** Explicit retract speed from CreatureBalance (px/s). */
+	retractSpeed: number;
 	frequencyWeight: number;
 	frequencyLabel: FrequencyLabel;
 	spawnZone: readonly SpawnZoneLabel[];
@@ -98,15 +105,26 @@ export interface CreatureDefinition {
 	displayScale: number;
 }
 
-function pxSpeed(label: SpeedLabel): number {
-	return SPEED_LABEL_TO_PX_PER_SEC_AT_1920[label] * SCENE_SPEED_SCALE;
-}
-
 function valueSpec(raw: string, min: number, max: number): CreatureValueSpec {
 	return { raw, min, max };
 }
 
-/** Shared sheet rows (identical within each Type after combining tabs). */
+function valueFromBalance(balance: CreatureBalanceEntry): CreatureValueSpec {
+	if (balance.rewardOperation === "subtract") {
+		return valueSpec(
+			`trừ ${balance.rewardMin}-${balance.rewardMax}$`,
+			-balance.rewardMax,
+			-balance.rewardMin,
+		);
+	}
+	return valueSpec(
+		`${balance.rewardMin}-${balance.rewardMax}`,
+		balance.rewardMin,
+		balance.rewardMax,
+	);
+}
+
+/** Shared sheet rows (category metadata; gameplay numbers live in CreatureBalance). */
 export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig> =
 	{
 		"Small Fish": {
@@ -179,6 +197,10 @@ function buildCreature(
 	animSuffix: "swim" | "walk",
 	defaultFacing: Facing,
 ): CreatureDefinition {
+	const balance = getCreatureBalance(id);
+	if (!balance) {
+		throw new Error(`Missing CreatureBalance entry for id: ${id}`);
+	}
 	const sheet = CATEGORY_SHEET_CONFIG[category];
 	const animationKey = `${id}-${animSuffix}`;
 	return {
@@ -186,17 +208,18 @@ function buildCreature(
 		category,
 		textureKey: `${animationKey}-001`,
 		animationKey,
-		value: sheet.value,
-		movementSpeed: pxSpeed(sheet.speedLabel),
+		value: valueFromBalance(balance),
+		movementSpeed: balance.movementSpeed,
 		speedLabel: sheet.speedLabel,
-		weight: sheet.weightLabel,
-		frequencyWeight: FREQUENCY_WEIGHT[sheet.frequencyLabel],
+		weight: balance.weight,
+		retractSpeed: balance.retractSpeed,
+		frequencyWeight: balance.spawnWeight,
 		frequencyLabel: sheet.frequencyLabel,
-		spawnZone: sheet.spawnZones,
+		spawnZone: balance.spawnZones,
 		defaultFacing,
 		isCrab: sheet.isCrab,
 		isToxic: sheet.isToxic,
-		displayScale: CATEGORY_DISPLAY_SCALE[category],
+		displayScale: balance.displayScale,
 	};
 }
 
@@ -276,6 +299,21 @@ if (CREATURE_CATALOG.length !== 33) {
 	throw new Error(
 		`CREATURE_CATALOG must contain 33 entries, got ${CREATURE_CATALOG.length}`,
 	);
+}
+
+{
+	const catalogIds = new Set(CREATURE_CATALOG.map((c) => c.id));
+	const balanceIds = new Set(CREATURE_BALANCE.map((b) => b.id));
+	for (const id of catalogIds) {
+		if (!balanceIds.has(id)) {
+			throw new Error(`Catalog id missing CreatureBalance entry: ${id}`);
+		}
+	}
+	for (const id of balanceIds) {
+		if (!catalogIds.has(id)) {
+			throw new Error(`CreatureBalance id missing from catalog: ${id}`);
+		}
+	}
 }
 
 export function assertCreatureWeight(

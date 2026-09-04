@@ -132,8 +132,9 @@ export class CatchController {
 		}
 
 		const weight = best.definition.weight;
+		const retractSpeed = best.definition.retractSpeed;
 		if (
-			!this.hook.beginRetractingWithCatch(weight, {
+			!this.hook.beginRetractingWithCatch(retractSpeed, {
 				creatureId: best.definition.id,
 				category: best.definition.category,
 				weight,

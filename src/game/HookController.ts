@@ -302,25 +302,35 @@ export class HookController {
 	 * Interrupt CASTING and start RETRACTING immediately, keeping the current
 	 * extension and frozen swing angle. Only succeeds while CASTING.
 	 *
-	 * Sets caught retract speed before changing state so the empty-retract path
-	 * cannot overwrite it.
+	 * Uses the caller's explicit per-creature retractSpeed for the entire
+	 * caught retraction (no weight fallback, no movementSpeed derivation).
+	 * Sets speed before changing state so the empty-retract path cannot overwrite it.
 	 */
 	beginRetractingWithCatch(
-		weight: CreatureWeight,
+		retractSpeed: number,
 		info?: RetractionStartInfo,
 	): boolean {
 		if (this._state !== "CASTING") {
 			return false;
 		}
 
-		const caughtRetractSpeed = getRetractSpeed(weight);
-		this.currentRetractSpeed = caughtRetractSpeed;
+		if (
+			typeof retractSpeed !== "number" ||
+			!Number.isFinite(retractSpeed) ||
+			retractSpeed <= 0
+		) {
+			throw new Error(
+				`beginRetractingWithCatch requires a positive retractSpeed, got ${String(retractSpeed)}`,
+			);
+		}
+
+		this.currentRetractSpeed = retractSpeed;
 		this.retractReason = "caught";
 		this.setState("RETRACTING");
 		this.logRetractionStart({
 			creatureId: info?.creatureId,
 			category: info?.category,
-			weight,
+			weight: info?.weight,
 		});
 		return true;
 	}

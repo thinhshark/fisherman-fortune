@@ -8,6 +8,8 @@ import Phaser from "phaser";
 import { HookController } from "../game/HookController";
 import { CreatureSpawner } from "../game/CreatureSpawner";
 import { CatchController } from "../game/CatchController";
+import { GameSession } from "../game/GameSession";
+import { HudController } from "../game/HudController";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -81,15 +83,21 @@ export default class Level extends Phaser.Scene {
 	private hookController!: HookController;
 	private creatureSpawner!: CreatureSpawner;
 	private catchController!: CatchController;
+	private gameSession!: GameSession;
+	private hudController!: HudController;
 
 	create() {
 		this.editorCreate();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
 		this.catchController = this.createCatchController();
+		this.gameSession = new GameSession(this);
+		this.hudController = new HudController(this);
 		this.applyDisplayDepths();
 
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			this.hudController.destroy();
+			this.gameSession.destroy();
 			this.catchController.destroy();
 			this.creatureSpawner.destroy();
 		});
@@ -99,6 +107,7 @@ export default class Level extends Phaser.Scene {
 		this.hookController.update(time, delta);
 		this.creatureSpawner.update(time, delta);
 		this.catchController.update(time, delta);
+		this.gameSession.update(time, delta);
 	}
 
 	private createHookController(): HookController {
@@ -133,7 +142,7 @@ export default class Level extends Phaser.Scene {
 		);
 	}
 
-	/** Background < creatures < player / hook assembly. */
+	/** Background < creatures < player / hook assembly. HUD is depth 1000. */
 	private applyDisplayDepths(): void {
 		this.gameBackground?.setDepth(0);
 		this.water?.setDepth(1);
