@@ -8,6 +8,7 @@
  */
 
 import {
+	BIG_FISH_CAUGHT_OFFSET,
 	CREATURE_BALANCE,
 	getCreatureBalance,
 	PULL_SPEED_BY_WEIGHT,
@@ -111,6 +112,12 @@ export interface CreatureDefinition {
 	/** Optional underwater-height ratios (0=top … 1=bottom). */
 	spawnYMinRatio?: number;
 	spawnYMaxRatio?: number;
+	/**
+	 * Display-only while carried on the hook (RETRACTING). Phaser Y+ is down.
+	 * Defaults for Big Fish come from BIG_FISH_CAUGHT_OFFSET.
+	 */
+	caughtOffsetX: number;
+	caughtOffsetY: number;
 }
 
 function valueSpec(raw: string, min: number, max: number): CreatureValueSpec {
@@ -137,7 +144,7 @@ export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig
 	{
 		"Small Fish": {
 			category: "Small Fish",
-			value: valueSpec("<50", 1, 49),
+			value: valueSpec("10-25", 10, 25),
 			speedLabel: "Fast",
 			weightLabel: "Light",
 			frequencyLabel: "Often",
@@ -147,7 +154,7 @@ export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig
 		},
 		Jelly: {
 			category: "Jelly",
-			value: valueSpec("50-100", 50, 100),
+			value: valueSpec("35-100", 35, 100),
 			speedLabel: "Medium",
 			weightLabel: "Medium",
 			// Fishes tab: Medium; Fishes 2: Normal — same weight.
@@ -158,7 +165,7 @@ export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig
 		},
 		"Big Fish": {
 			category: "Big Fish",
-			value: valueSpec("150-200", 150, 200),
+			value: valueSpec("250-450", 250, 450),
 			speedLabel: "Slow",
 			weightLabel: "Heavy",
 			frequencyLabel: "Seldom",
@@ -168,7 +175,7 @@ export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig
 		},
 		"Toxic Fish": {
 			category: "Toxic Fish",
-			value: valueSpec("trừ 1-50$", -50, -1),
+			value: valueSpec("trừ 50-200$", -200, -50),
 			speedLabel: "Medium",
 			weightLabel: "Light",
 			frequencyLabel: "Medium",
@@ -210,6 +217,8 @@ function buildCreature(
 	}
 	const sheet = CATEGORY_SHEET_CONFIG[category];
 	const animationKey = `${id}-${animSuffix}`;
+	const bigFishDefaults =
+		category === "Big Fish" ? BIG_FISH_CAUGHT_OFFSET : undefined;
 	return {
 		id,
 		category,
@@ -229,6 +238,8 @@ function buildCreature(
 		scale: balance.scale,
 		spawnYMinRatio: balance.spawnYMinRatio,
 		spawnYMaxRatio: balance.spawnYMaxRatio,
+		caughtOffsetX: balance.caughtOffsetX ?? bigFishDefaults?.caughtOffsetX ?? 0,
+		caughtOffsetY: balance.caughtOffsetY ?? bigFishDefaults?.caughtOffsetY ?? 0,
 	};
 }
 

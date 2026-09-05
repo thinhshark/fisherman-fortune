@@ -75,7 +75,23 @@ export interface CreatureBalanceEntry {
 	 */
 	spawnYMinRatio?: number;
 	spawnYMaxRatio?: number;
+	/**
+	 * Display-only offset while this creature rides the hook (RETRACTING).
+	 * Applied in CatchController.attachCaught; does not affect catch collision.
+	 * Phaser Y+ is down — positive caughtOffsetY places the sprite below the hook.
+	 */
+	caughtOffsetX?: number;
+	caughtOffsetY?: number;
 }
+
+/**
+ * Shared Big Fish carry pose: hook reads ~15px higher on the body while retracting.
+ * Wired via CreatureCatalog for all big-fish-* (override per entry with caughtOffset*).
+ */
+export const BIG_FISH_CAUGHT_OFFSET = {
+	caughtOffsetX: 0,
+	caughtOffsetY: 15,
+} as const;
 
 /**
  * How many creatures to place across the water immediately on Play / Play Again.
@@ -106,7 +122,7 @@ const PULL_MEDIUM = PULL_SPEED_BY_WEIGHT.Medium;
 const PULL_HEAVY = PULL_SPEED_BY_WEIGHT.Heavy;
 
 export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
-	// --- Small Fish (Light, +1–49, Upper/Middle, pull 700) ---
+	// --- Small Fish (Light, sheet Value ranges, Upper/Middle, pull 700) ---
 	{
 		id: "small-fish-01",
 		nativeFacing: "Right",
@@ -115,8 +131,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 20,
+		rewardMax: 25,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -128,8 +144,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 15,
+		rewardMax: 20,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -141,8 +157,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 10,
+		rewardMax: 15,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -154,8 +170,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 10,
+		rewardMax: 15,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -167,8 +183,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 10,
+		rewardMax: 15,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -180,8 +196,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 20,
+		rewardMax: 25,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -193,8 +209,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 15,
+		rewardMax: 20,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -206,8 +222,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 15,
+		rewardMax: 20,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -219,8 +235,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 20,
+		rewardMax: 25,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
@@ -232,13 +248,13 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 5,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 49,
+		rewardMin: 10,
+		rewardMax: 15,
 		rewardOperation: "add",
 		scale: SCALE_SMALL_FISH,
 	},
 
-	// --- Jelly (Medium, +50–100, Middle/Lower, pull 280) ---
+	// --- Jelly (Medium, sheet Value ranges, Middle/Lower, pull 280) ---
 	{
 		id: "jelly-01",
 		nativeFacing: "Right",
@@ -312,8 +328,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_MEDIUM,
 		spawnWeight: 3,
 		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
+		rewardMin: 35,
+		rewardMax: 45,
 		rewardOperation: "add",
 		scale: SCALE_JELLY,
 	},
@@ -325,8 +341,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_MEDIUM,
 		spawnWeight: 3,
 		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
+		rewardMin: 35,
+		rewardMax: 45,
 		rewardOperation: "add",
 		scale: SCALE_JELLY,
 	},
@@ -338,7 +354,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_MEDIUM,
 		spawnWeight: 3,
 		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
+		rewardMin: 80,
 		rewardMax: 100,
 		rewardOperation: "add",
 		scale: SCALE_JELLY,
@@ -351,13 +367,13 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_MEDIUM,
 		spawnWeight: 3,
 		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
+		rewardMin: 35,
+		rewardMax: 45,
 		rewardOperation: "add",
 		scale: SCALE_JELLY,
 	},
 
-	// --- Big Fish (Heavy, +150–200, deeper lower band, pull 220) ---
+	// --- Big Fish (Heavy, sheet Value ranges, Lower, pull 100) ---
 	{
 		id: "big-fish-01",
 		nativeFacing: "Right",
@@ -366,8 +382,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_HEAVY,
 		spawnWeight: 1,
 		spawnZones: ["Lower"],
-		rewardMin: 150,
-		rewardMax: 200,
+		rewardMin: 250,
+		rewardMax: 350,
 		rewardOperation: "add",
 		scale: SCALE_BIG_FISH,
 		spawnYMinRatio: BIG_FISH_Y_MIN,
@@ -381,8 +397,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_HEAVY,
 		spawnWeight: 1,
 		spawnZones: ["Lower"],
-		rewardMin: 150,
-		rewardMax: 200,
+		rewardMin: 350,
+		rewardMax: 450,
 		rewardOperation: "add",
 		scale: SCALE_BIG_FISH,
 		spawnYMinRatio: BIG_FISH_Y_MIN,
@@ -396,8 +412,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_HEAVY,
 		spawnWeight: 1,
 		spawnZones: ["Lower"],
-		rewardMin: 150,
-		rewardMax: 200,
+		rewardMin: 250,
+		rewardMax: 350,
 		rewardOperation: "add",
 		scale: SCALE_BIG_FISH,
 		spawnYMinRatio: BIG_FISH_Y_MIN,
@@ -411,8 +427,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_HEAVY,
 		spawnWeight: 1,
 		spawnZones: ["Lower"],
-		rewardMin: 150,
-		rewardMax: 200,
+		rewardMin: 250,
+		rewardMax: 350,
 		rewardOperation: "add",
 		scale: SCALE_BIG_FISH,
 		spawnYMinRatio: BIG_FISH_Y_MIN,
@@ -426,8 +442,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_HEAVY,
 		spawnWeight: 1,
 		spawnZones: ["Lower"],
-		rewardMin: 150,
-		rewardMax: 200,
+		rewardMin: 250,
+		rewardMax: 350,
 		rewardOperation: "add",
 		scale: SCALE_BIG_FISH,
 		spawnYMinRatio: BIG_FISH_Y_MIN,
@@ -441,15 +457,15 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_HEAVY,
 		spawnWeight: 1,
 		spawnZones: ["Lower"],
-		rewardMin: 150,
-		rewardMax: 200,
+		rewardMin: 350,
+		rewardMax: 450,
 		rewardOperation: "add",
 		scale: SCALE_BIG_FISH,
 		spawnYMinRatio: BIG_FISH_Y_MIN,
 		spawnYMaxRatio: BIG_FISH_Y_MAX,
 	},
 
-	// --- Toxic Fish (Light, -1–50, Upper/Middle, pull 700) ---
+	// --- Toxic Fish (Light, sheet trừ ranges, Upper/Middle, pull 700) ---
 	{
 		id: "toxic-fish-01",
 		nativeFacing: "Right",
@@ -458,8 +474,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 50,
+		rewardMin: 50,
+		rewardMax: 100,
 		rewardOperation: "subtract",
 		scale: SCALE_TOXIC_FISH,
 	},
@@ -471,21 +487,21 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 50,
+		rewardMin: 50,
+		rewardMax: 100,
 		rewardOperation: "subtract",
 		scale: SCALE_TOXIC_FISH,
 	},
 	{
 		id: "toxic-fish-03",
-		nativeFacing: "Left",
+		nativeFacing: "Right",
 		movementSpeed: SPEED_MEDIUM,
 		weight: "Light",
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 50,
+		rewardMin: 50,
+		rewardMax: 100,
 		rewardOperation: "subtract",
 		scale: SCALE_TOXIC_FISH,
 	},
@@ -497,8 +513,8 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 1,
-		rewardMax: 50,
+		rewardMin: 100,
+		rewardMax: 200,
 		rewardOperation: "subtract",
 		scale: SCALE_TOXIC_FISH,
 	},

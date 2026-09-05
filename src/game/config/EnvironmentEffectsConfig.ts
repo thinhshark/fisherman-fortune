@@ -12,11 +12,11 @@
  */
 export const EnvironmentEffectsConfig = {
 	/** Vertical boat bob from the original Y, in logical pixels. */
-	boatBobAmplitudePx: 2.5,
+	boatBobAmplitudePx: 5,
 	/** Extra boat rotation from the original angle, in degrees. */
-	boatRockAmplitudeDeg: 0.55,
+	boatRockAmplitudeDeg: 1.25,
 	/** One boat bob+rock cycle, in milliseconds. */
-	boatCycleMs: 3500,
+	boatCycleMs: 3200,
 
 	/**
 	 * Slight visual overscan so refraction sampling does not show empty edges.

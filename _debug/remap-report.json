@@ -411,5 +411,23 @@
       "source": "bigfish_01",
       "nativeFacing": "Left"
     }
+  },
+  "value_sheet_fix": {
+    "small-fish-04": {
+      "source": "bigfish_01",
+      "nativeFacing": "Left",
+      "frames": 9
+    },
+    "toxic-fish-03": {
+      "source": "fish_09",
+      "nativeFacing": "Right",
+      "frames": 11
+    },
+    "toxic-fish-04": {
+      "source": "bigfish_03",
+      "nativeFacing": "Left",
+      "frames": 11
+    },
+    "note": "Values sheet visual identity: fish_09 is Toxic#3 not Small#4; Small#4 is bigfish_01; Toxic#4 bright orange is bigfish_03"
   }
 }

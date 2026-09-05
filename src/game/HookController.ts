@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { type CreatureCategory } from "./CreatureCatalog";
 import { DEBUG_PULL_SPEED } from "./config/CreatureBalance";
 import {
+	HOOK_CAST,
 	HOOK_JAWS,
 	HOOK_JAW_TRANSITION_MS,
 	HOOK_SWING,
@@ -77,7 +78,6 @@ interface PullMeasureSession {
  * Jaw open/close is applied to nested hinge pivots, not the PNG bounding-box centers.
  */
 export class HookController {
-	private static readonly CAST_SPEED_PX_PER_SEC = 650;
 	private static readonly HOOK_COLLISION_RADIUS = 32;
 	private static readonly ATTACH_OFFSET_PX = 24;
 	private static readonly BOUNDARY_MARGIN_PX = 35;
@@ -109,7 +109,11 @@ export class HookController {
 	private readonly hookCenterRestLocalY: number;
 	private readonly restingHookDistance: number;
 	private readonly worldMatrix = new Phaser.GameObjects.Components.TransformMatrix();
+	private readonly invertMatrix = new Phaser.GameObjects.Components.TransformMatrix();
 	private readonly hookWorld = new Phaser.Math.Vector2();
+	private readonly localPoint = new Phaser.Math.Vector2();
+	/** Creature currently sandwiched between jaw pivots (display list only). */
+	private caughtDisplay?: Phaser.GameObjects.Sprite;
 
 	private _state: HookState = "SWINGING";
 	private elapsedMs = 0;
@@ -306,6 +310,109 @@ export class HookController {
 		};
 	}
 
+	/**
+	 * Parent a caught creature for jaw/rope sandwich once (container child order):
+	 * hookLeftPivot < creature < hookStem (rope) < hookRightPivot.
+	 * Only hook-left stays behind the fish; rope and hook-right draw in front.
+	 * Preserves world position, scale, flipX, and world rotation.
+	 */
+	insertCaughtCreatureDisplay(sprite: Phaser.GameObjects.Sprite): void {
+		if (this.caughtDisplay === sprite) {
+			return;
+		}
+		if (this.caughtDisplay) {
+			this.releaseCaughtCreatureDisplay(this.caughtDisplay);
+		}
+
+		const worldX = sprite.x;
+		const worldY = sprite.y;
+		const worldRotation = sprite.rotation;
+
+		if (sprite.parentContainer !== this.hookContainer) {
+			this.hookContainer.add(sprite);
+		}
+		this.applyCaughtHookDisplayOrder(sprite);
+		// Counter container swing so the fish stays world-upright like before.
+		sprite.setRotation(worldRotation - this.hookContainer.rotation);
+		this.setCaughtCreatureWorldPosition(sprite, worldX, worldY);
+		this.caughtDisplay = sprite;
+	}
+
+	/**
+	 * Remove caught creature from the hook container without destroying it.
+	 * Restores idle child order so the next catch can re-sandwich cleanly.
+	 */
+	releaseCaughtCreatureDisplay(sprite: Phaser.GameObjects.Sprite): void {
+		if (sprite.parentContainer === this.hookContainer) {
+			this.hookContainer.remove(sprite, false);
+		}
+		if (this.caughtDisplay === sprite) {
+			this.caughtDisplay = undefined;
+		}
+		this.restoreIdleHookDisplayOrder();
+	}
+
+	/**
+	 * Caught order (back → front): castRope, left jaw, creature, rope stem, right jaw.
+	 * Uses bringToTop only — avoids Container.moveTo out-of-bounds throws.
+	 */
+	private applyCaughtHookDisplayOrder(
+		sprite: Phaser.GameObjects.Sprite,
+	): void {
+		this.hookContainer.sendToBack(this.castRope);
+		this.hookContainer.bringToTop(this.hookLeftPivot);
+		this.hookContainer.bringToTop(sprite);
+		this.hookContainer.bringToTop(this.hookStem);
+		this.hookContainer.bringToTop(this.hookRightPivot);
+	}
+
+	/**
+	 * Idle order (back → front): castRope, stem, left jaw, right jaw.
+	 */
+	private restoreIdleHookDisplayOrder(): void {
+		this.hookContainer.sendToBack(this.castRope);
+		this.hookContainer.bringToTop(this.hookStem);
+		this.hookContainer.bringToTop(this.hookLeftPivot);
+		this.hookContainer.bringToTop(this.hookRightPivot);
+	}
+
+	/** True when this sprite is currently sandwiched in the hook display list. */
+	isCaughtCreatureDisplay(sprite: Phaser.GameObjects.Sprite): boolean {
+		return (
+			this.caughtDisplay === sprite ||
+			sprite.parentContainer === this.hookContainer
+		);
+	}
+
+	/**
+	 * Place a sandwiched creature so its world origin matches (worldX, worldY).
+	 * Call each retract frame; offsets (e.g. Big Fish +15 Y) stay in world space.
+	 */
+	setCaughtCreatureWorldPosition(
+		sprite: Phaser.GameObjects.Sprite,
+		worldX: number,
+		worldY: number,
+	): void {
+		this.hookContainer.getWorldTransformMatrix(this.worldMatrix);
+		this.invertMatrix.copyFrom(this.worldMatrix);
+		this.invertMatrix.invert();
+		this.invertMatrix.transformPoint(worldX, worldY, this.localPoint);
+		sprite.setPosition(this.localPoint.x, this.localPoint.y);
+	}
+
+	/** World-space origin of a sprite (works inside or outside the hook container). */
+	getDisplayWorldPosition(
+		sprite: Phaser.GameObjects.Sprite,
+	): Readonly<{ x: number; y: number }> {
+		if (sprite.parentContainer !== this.hookContainer) {
+			return { x: sprite.x, y: sprite.y };
+		}
+		this.hookContainer
+			.getWorldTransformMatrix(this.worldMatrix)
+			.transformPoint(sprite.x, sprite.y, this.hookWorld);
+		return { x: this.hookWorld.x, y: this.hookWorld.y };
+	}
+
 	get hookCollisionRadius(): number {
 		return HookController.HOOK_COLLISION_RADIUS;
 	}
@@ -473,8 +580,7 @@ export class HookController {
 
 	private updateCasting(delta: number): void {
 		const deltaSec = delta / 1000;
-		this.extension +=
-			HookController.CAST_SPEED_PX_PER_SEC * deltaSec;
+		this.extension += HOOK_CAST.speedPxPerSec * deltaSec;
 
 		if (this.extension >= this.maxExtension) {
 			this.extension = this.maxExtension;

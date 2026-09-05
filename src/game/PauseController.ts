@@ -9,14 +9,23 @@ const PAUSE_BUTTON_DEPTH = 1010;
 const OVERLAY_DEPTH = 1900;
 const OVERLAY_ALPHA = 0.72;
 const DISABLED_ALPHA = 0.45;
+const DESIGN_WIDTH = 1280;
+const DESIGN_HEIGHT = 720;
 const PAUSE_BUTTON_Y = 42;
 const PAUSE_BUTTON_SCALE = 0.55;
 const TITLE_SCALE = 0.55;
-/** Continue is a wide pill; jungle squares share ACTION_SCALE. */
-const CONTINUE_SCALE = 0.85;
-const ACTION_SCALE = 0.95;
-const TOGGLE_SCALE = 0.72;
+/** Continue is the primary wide pill; Replay/Home are secondary squares. */
+const CONTINUE_SCALE = 0.92;
+const ACTION_SCALE = 0.9;
+const TOGGLE_SCALE = 0.7;
 const MIN_HIT = 72;
+/** Design-space offsets from screen center (scaled by ui). */
+const TITLE_OFFSET_Y = -175;
+const CONTINUE_OFFSET_Y = -25;
+const SECONDARY_OFFSET_Y = 95;
+const SECONDARY_GAP = 120;
+const AUDIO_OFFSET_Y = 210;
+const AUDIO_GAP = 100;
 
 export interface PauseControllerOptions {
 	canPause: () => boolean;
@@ -28,7 +37,7 @@ export interface PauseControllerOptions {
 }
 
 /**
- * In-game pause: Continue, Replay, Home, separate Sound / Music toggles.
+ * In-game pause: Continue (primary) → Replay | Home → Sound | Music.
  *
  * Textures (visual inspection):
  * - Replay → restart-001 / restart-002 (circular arrows)
@@ -451,8 +460,11 @@ export class PauseController {
 		const h = this.scene.scale.height;
 		const cx = w * 0.5;
 		const cy = h * 0.5;
+		const ui = Math.min(w / DESIGN_WIDTH, h / DESIGN_HEIGHT);
 
-		this.pauseButton?.setPosition(cx, PAUSE_BUTTON_Y);
+		this.pauseButton
+			?.setScale(PAUSE_BUTTON_SCALE * ui)
+			.setPosition(cx, PAUSE_BUTTON_Y * (h / DESIGN_HEIGHT));
 
 		if (!this.overlayBuilt) {
 			return;
@@ -464,13 +476,26 @@ export class PauseController {
 			this.blocker?.setInteractive();
 		}
 
-		this.title?.setPosition(cx, cy - 130);
-		// Resume | Replay | Home — evenly spaced, no overlap at 1280×720.
-		this.continueButton?.setPosition(cx - 160, cy - 10);
-		this.replayButton?.setPosition(cx, cy - 10);
-		this.homeButton?.setPosition(cx + 160, cy - 10);
-		this.soundButton?.setPosition(cx - 90, cy + 130);
-		this.musicButton?.setPosition(cx + 90, cy + 130);
+		this.title
+			?.setScale(TITLE_SCALE * ui)
+			.setPosition(cx, cy + TITLE_OFFSET_Y * ui);
+
+		// Primary: Continue centered. Secondary: Replay | Home. Then Sound | Music.
+		this.continueButton
+			?.setScale(CONTINUE_SCALE * ui)
+			.setPosition(cx, cy + CONTINUE_OFFSET_Y * ui);
+		this.replayButton
+			?.setScale(ACTION_SCALE * ui)
+			.setPosition(cx - SECONDARY_GAP * ui, cy + SECONDARY_OFFSET_Y * ui);
+		this.homeButton
+			?.setScale(ACTION_SCALE * ui)
+			.setPosition(cx + SECONDARY_GAP * ui, cy + SECONDARY_OFFSET_Y * ui);
+		this.soundButton
+			?.setScale(TOGGLE_SCALE * ui)
+			.setPosition(cx - AUDIO_GAP * ui, cy + AUDIO_OFFSET_Y * ui);
+		this.musicButton
+			?.setScale(TOGGLE_SCALE * ui)
+			.setPosition(cx + AUDIO_GAP * ui, cy + AUDIO_OFFSET_Y * ui);
 
 		this.refreshHitAreas();
 	}

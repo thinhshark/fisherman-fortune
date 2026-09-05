@@ -11,9 +11,11 @@ import { LeaderboardButton } from "./ui/LeaderboardButton";
 
 const OVERLAY_DEPTH = 2000;
 const OVERLAY_ALPHA = 0.72;
-const TITLE_SCALE = 0.5;
-const RESTART_SCALE = 1.05;
-const HOME_SCALE = 0.95;
+const DESIGN_WIDTH = 1280;
+const DESIGN_HEIGHT = 720;
+const TITLE_SCALE = 0.52;
+const RESTART_SCALE = 1.08;
+const HOME_SCALE = 0.9;
 const SCORE_LABEL_PX = 26;
 const SCORE_BASE_PX = 56;
 const SCORE_MIN_PX = 28;
@@ -21,6 +23,13 @@ const SCORE_MAX_WIDTH_FRAC = 0.55;
 const MIN_HIT = 56;
 const FONT_FAMILY = "Luckiest Guy";
 const DISABLED_ALPHA = 0.55;
+/** Design-space Y offsets from center (scaled by ui). */
+const TITLE_OFFSET_Y = -205;
+const SCORE_LABEL_OFFSET_Y = -125;
+const SCORE_OFFSET_Y = -60;
+const PLAY_AGAIN_OFFSET_Y = 35;
+const LEADERBOARD_OFFSET_Y = 145;
+const HOME_OFFSET_Y = 250;
 
 export interface GameOverControllerOptions {
 	audio?: AudioController;
@@ -268,13 +277,18 @@ export class GameOverController {
 		const h = this.scene.scale.height;
 		const cx = w * 0.5;
 		const cy = h * 0.5;
+		const ui = Math.min(w / DESIGN_WIDTH, h / DESIGN_HEIGHT);
 
 		this.overlay?.setPosition(cx, cy).setDisplaySize(w, h);
 		this.blocker?.setPosition(cx, cy).setSize(w, h).setInteractive();
 
-		this.title?.setPosition(cx, cy - 210);
+		this.title
+			?.setScale(TITLE_SCALE * ui)
+			.setPosition(cx, cy + TITLE_OFFSET_Y * ui);
 
-		this.scoreLabel?.setPosition(cx, cy - 135);
+		this.scoreLabel
+			?.setFontSize(Math.round(SCORE_LABEL_PX * ui))
+			.setPosition(cx, cy + SCORE_LABEL_OFFSET_Y * ui);
 
 		if (this.scoreText) {
 			this.scoreText.setText(
@@ -282,24 +296,32 @@ export class GameOverController {
 			);
 			this.fitScoreText(
 				this.scoreText,
-				SCORE_BASE_PX,
-				Math.min(w * SCORE_MAX_WIDTH_FRAC, 420),
+				Math.round(SCORE_BASE_PX * ui),
+				Math.min(w * SCORE_MAX_WIDTH_FRAC, 420 * ui),
 			);
-			this.scoreText.setPosition(cx, cy - 75);
+			this.scoreText.setPosition(cx, cy + SCORE_OFFSET_Y * ui);
 		}
 
+		const playScale = RESTART_SCALE * ui;
 		this.playAgainButton
-			?.setScale(RESTART_SCALE)
-			.setPosition(cx, cy + 15);
+			?.setScale(playScale)
+			.setPosition(cx, cy + PLAY_AGAIN_OFFSET_Y * ui);
 		if (this.playAgainButton) {
-			this.ensureMinHitArea(this.playAgainButton, RESTART_SCALE);
+			this.ensureMinHitArea(this.playAgainButton, playScale);
 		}
 
-		this.leaderboardButton?.setPosition(cx, cy + 115);
+		this.leaderboardButton?.setBaseScale(ui);
+		this.leaderboardButton?.setPosition(
+			cx,
+			cy + LEADERBOARD_OFFSET_Y * ui,
+		);
 
-		this.homeButton?.setScale(HOME_SCALE).setPosition(cx, cy + 210);
+		const homeScale = HOME_SCALE * ui;
+		this.homeButton
+			?.setScale(homeScale)
+			.setPosition(cx, cy + HOME_OFFSET_Y * ui);
 		if (this.homeButton) {
-			this.ensureMinHitArea(this.homeButton, HOME_SCALE);
+			this.ensureMinHitArea(this.homeButton, homeScale);
 		}
 	}
 

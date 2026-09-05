@@ -10,15 +10,16 @@ const SAFE_MARGIN = 28;
 const MIN_HIT = 72;
 const DESIGN_WIDTH = 1280;
 const DESIGN_HEIGHT = 720;
-const LOGO_Y = 140;
-const PLAY_Y = 300;
+/** Vertical rhythm (design 720): logo → Play → Sound|Music → Leaderboard. */
+const LOGO_Y = 125;
+const PLAY_Y = 290;
 const AUDIO_ROW_Y = 400;
-const LEADERBOARD_Y = 510;
-const AUDIO_GAP = 100;
+const LEADERBOARD_Y = 505;
+const AUDIO_GAP = 110;
 /** Uniform scale so 120px assets display ≥72px. */
 const AUDIO_SCALE = 0.72;
 const EXIT_SCALE = 0.55;
-const PLAY_SCALE = 1.1;
+const PLAY_SCALE = 1.15;
 const DISABLED_ALPHA = 0.45;
 
 export interface HomeControllerOptions {

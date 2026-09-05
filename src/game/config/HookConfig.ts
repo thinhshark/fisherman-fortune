@@ -7,8 +7,14 @@
 export const HOOK_SWING = {
 	/** Half-range of idle swing about vertical (degrees). Full arc = ±this. */
 	amplitudeDegrees: 70,
-	/** One full left→right→left cycle (ms). */
-	fullCycleMs: 3200,
+	/** One full left→right→left cycle (ms). Higher = slower swing. */
+	fullCycleMs: 4200,
+} as const;
+
+/** Outward cast (hook flying into the water). */
+export const HOOK_CAST = {
+	/** Pixels per second while CASTING. Lower = slower launch. */
+	speedPxPerSec: 480,
 } as const;
 
 /**

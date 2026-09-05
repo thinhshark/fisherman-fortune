@@ -103,7 +103,8 @@ type CatchCandidate =
 
 /**
  * Geometry-based hook catching for creatures and stationary items.
- * Does not parent targets into the hook Container and does not award score.
+ * Creatures are parented into the hook Container (between jaw pivots) for
+ * display order only; items stay on the scene list. Does not award score.
  */
 export class CatchController {
 	private readonly scene: Phaser.Scene;
@@ -312,7 +313,9 @@ export class CatchController {
 			definition: best.definition,
 		};
 		this.delivered = false;
-		best.sprite.setDepth(CAUGHT_DEPTH);
+		// Sandwich once: hook-left < creature < hook-right (container child order).
+		this.hook.insertCaughtCreatureDisplay(best.sprite);
+		this.attachCaught();
 	}
 
 	private catchItem(best: CatchableItem): void {
@@ -365,7 +368,19 @@ export class CatchController {
 			if (!caught.sprite.active) {
 				return;
 			}
-			caught.sprite.setPosition(hookPos.x, hookPos.y);
+			const ox = caught.definition.caughtOffsetX;
+			const oy = caught.definition.caughtOffsetY;
+			const worldX = hookPos.x + ox;
+			const worldY = hookPos.y + oy;
+			if (this.hook.isCaughtCreatureDisplay(caught.sprite)) {
+				this.hook.setCaughtCreatureWorldPosition(
+					caught.sprite,
+					worldX,
+					worldY,
+				);
+			} else {
+				caught.sprite.setPosition(worldX, worldY);
+			}
 			return;
 		}
 
@@ -386,8 +401,9 @@ export class CatchController {
 
 		if (target.kind === "creature") {
 			const { sprite, definition } = target;
-			const deliveryX = sprite.x;
-			const deliveryY = sprite.y;
+			const world = this.hook.getDisplayWorldPosition(sprite);
+			const deliveryX = world.x;
+			const deliveryY = world.y;
 			const payload: CreatureDeliveredPayload = {
 				id: definition.id,
 				category: definition.category,
@@ -397,6 +413,7 @@ export class CatchController {
 				deliveryX,
 				deliveryY,
 			};
+			this.hook.releaseCaughtCreatureDisplay(sprite);
 			this.creatureSpawner.destroyClaimedCreature(sprite);
 			this.scene.events.emit(CREATURE_DELIVERED_EVENT, payload);
 			return;
@@ -425,6 +442,7 @@ export class CatchController {
 
 	private destroyCaughtTarget(target: CaughtTarget): void {
 		if (target.kind === "creature") {
+			this.hook.releaseCaughtCreatureDisplay(target.sprite);
 			if (target.sprite.active) {
 				this.creatureSpawner.destroyClaimedCreature(target.sprite);
 			}
