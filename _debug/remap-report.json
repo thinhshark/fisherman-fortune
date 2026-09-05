@@ -1,0 +1,415 @@
+{
+  "before": {
+    "small-fish-01": {
+      "count": 19,
+      "set": "647d8643a6e5ea74f03bcf112ac25094"
+    },
+    "small-fish-02": {
+      "count": 9,
+      "set": "1e69882320f0178938b71b5cc11f4f37"
+    },
+    "small-fish-03": {
+      "count": 9,
+      "set": "83c220d18b6b7d046526decd1f12502d"
+    },
+    "small-fish-04": {
+      "count": 9,
+      "set": "87f401dbe2253af282b11d0513775397"
+    },
+    "small-fish-05": {
+      "count": 9,
+      "set": "aaf4a172da2032aaa1a0287ff8e5afb2"
+    },
+    "small-fish-06": {
+      "count": 9,
+      "set": "fc68ff4e02cd6513366213a1f0d6fd46"
+    },
+    "small-fish-07": {
+      "count": 9,
+      "set": "e01486056e2761bf71defc2f0c0b8e33"
+    },
+    "small-fish-08": {
+      "count": 20,
+      "set": "b1f3bdfdacf9b27ec9576082229070d2"
+    },
+    "small-fish-09": {
+      "count": 11,
+      "set": "9610646850c6160f5afe6b29ab25fa9b"
+    },
+    "small-fish-10": {
+      "count": 20,
+      "set": "3550136ec792c4bf108a65b8d7c92169"
+    },
+    "jelly-01": {
+      "count": 11,
+      "set": "6fcb0d6fdd80ab0cc57405c39b1a0971"
+    },
+    "jelly-02": {
+      "count": 23,
+      "set": "ba16359e664a2e2bc1dbea9de011c19e"
+    },
+    "jelly-03": {
+      "count": 11,
+      "set": "c5ab62d7f13f5f4cd7e3ce9e1f20dd2a"
+    },
+    "jelly-04": {
+      "count": 11,
+      "set": "93696ff781153832fdbb951bb7fc16f7"
+    },
+    "jelly-05": {
+      "count": 11,
+      "set": "6fcb0d6fdd80ab0cc57405c39b1a0971"
+    },
+    "jelly-06": {
+      "count": 11,
+      "set": "aee36ab89c4793951e448ce8c186e3dc"
+    },
+    "jelly-07": {
+      "count": 11,
+      "set": "29aded813533ddcf53a729b0a173f29f"
+    },
+    "jelly-08": {
+      "count": 11,
+      "set": "b3a293a41ff5e295c5471b720cbc66b8"
+    },
+    "jelly-09": {
+      "count": 11,
+      "set": "c443e3e835357f0fd83238754c3958d3"
+    },
+    "big-fish-01": {
+      "count": 13,
+      "set": "5996a3a1ae4116bcd4a0412c8afc9c86"
+    },
+    "big-fish-02": {
+      "count": 13,
+      "set": "5603c2928d7c6b291115379125421c30"
+    },
+    "big-fish-03": {
+      "count": 16,
+      "set": "2b17aa80a520bad5a3f51b693d9d4f4d"
+    },
+    "big-fish-04": {
+      "count": 13,
+      "set": "57b080f71592c81149978aab7cb92847"
+    },
+    "big-fish-05": {
+      "count": 13,
+      "set": "c6b996952448a164b421648b75cbe942"
+    },
+    "big-fish-06": {
+      "count": 13,
+      "set": "63f32cd18d391fd29407e927aa3bd4d2"
+    },
+    "toxic-fish-01": {
+      "count": 11,
+      "set": "a429264114aa8b8f372ba72a3dd0b4ca"
+    },
+    "toxic-fish-02": {
+      "count": 11,
+      "set": "a318b1f71ed2fb059a14759119243a35"
+    },
+    "toxic-fish-03": {
+      "count": 11,
+      "set": "f1963193e5923bbfb4e80ec97f8e52e9"
+    },
+    "toxic-fish-04": {
+      "count": 9,
+      "set": "e0ee59d3e7fe13e5a2770aaa253030ff"
+    }
+  },
+  "after": {
+    "small-fish-01": {
+      "count": 9,
+      "source": "fish_03",
+      "nativeFacing": "Right",
+      "set": "83c220d18b6b7d046526decd1f12502d"
+    },
+    "small-fish-02": {
+      "count": 9,
+      "source": "fish_06",
+      "nativeFacing": "Right",
+      "set": "fc68ff4e02cd6513366213a1f0d6fd46"
+    },
+    "small-fish-03": {
+      "count": 20,
+      "source": "fish_10",
+      "nativeFacing": "Right",
+      "set": "3550136ec792c4bf108a65b8d7c92169"
+    },
+    "small-fish-04": {
+      "count": 11,
+      "source": "fish_09",
+      "nativeFacing": "Left",
+      "set": "9610646850c6160f5afe6b29ab25fa9b"
+    },
+    "small-fish-05": {
+      "count": 20,
+      "source": "fish_08",
+      "nativeFacing": "Left",
+      "set": "b1f3bdfdacf9b27ec9576082229070d2"
+    },
+    "small-fish-06": {
+      "count": 9,
+      "source": "fish_02",
+      "nativeFacing": "Left",
+      "set": "1e69882320f0178938b71b5cc11f4f37"
+    },
+    "small-fish-07": {
+      "count": 9,
+      "source": "fish_04",
+      "nativeFacing": "Left",
+      "set": "87f401dbe2253af282b11d0513775397"
+    },
+    "small-fish-08": {
+      "count": 9,
+      "source": "fish_05",
+      "nativeFacing": "Left",
+      "set": "aaf4a172da2032aaa1a0287ff8e5afb2"
+    },
+    "small-fish-09": {
+      "count": 9,
+      "source": "fish_07",
+      "nativeFacing": "Left",
+      "set": "e01486056e2761bf71defc2f0c0b8e33"
+    },
+    "small-fish-10": {
+      "count": 19,
+      "source": "fish_01",
+      "nativeFacing": "Left",
+      "set": "647d8643a6e5ea74f03bcf112ac25094"
+    },
+    "jelly-01": {
+      "count": 23,
+      "source": "jellyfish_02",
+      "nativeFacing": "Right",
+      "set": "ba16359e664a2e2bc1dbea9de011c19e"
+    },
+    "jelly-02": {
+      "count": 11,
+      "source": "jellyfish_04",
+      "nativeFacing": "Right",
+      "set": "93696ff781153832fdbb951bb7fc16f7"
+    },
+    "jelly-03": {
+      "count": 11,
+      "source": "jellyfish_06",
+      "nativeFacing": "Right",
+      "set": "aee36ab89c4793951e448ce8c186e3dc"
+    },
+    "jelly-04": {
+      "count": 11,
+      "source": "jellyfish_07",
+      "nativeFacing": "Right",
+      "set": "29aded813533ddcf53a729b0a173f29f"
+    },
+    "jelly-05": {
+      "count": 11,
+      "source": "jellyfish_09",
+      "nativeFacing": "Right",
+      "set": "c443e3e835357f0fd83238754c3958d3"
+    },
+    "jelly-06": {
+      "count": 11,
+      "source": "jellyfish_01",
+      "nativeFacing": "Left",
+      "set": "6fcb0d6fdd80ab0cc57405c39b1a0971"
+    },
+    "jelly-07": {
+      "count": 11,
+      "source": "jellyfish_03",
+      "nativeFacing": "Left",
+      "set": "c5ab62d7f13f5f4cd7e3ce9e1f20dd2a"
+    },
+    "jelly-08": {
+      "count": 11,
+      "source": "jellyfish_08",
+      "nativeFacing": "Left",
+      "set": "b3a293a41ff5e295c5471b720cbc66b8"
+    },
+    "jelly-09": {
+      "count": 11,
+      "source": "jellyfish_10",
+      "nativeFacing": "Left",
+      "set": "a211a87e7e30bdd2d622ea33be9b1bd9"
+    },
+    "big-fish-01": {
+      "count": 13,
+      "source": "bigfish_06",
+      "nativeFacing": "Right",
+      "set": "5996a3a1ae4116bcd4a0412c8afc9c86"
+    },
+    "big-fish-02": {
+      "count": 13,
+      "source": "bigfish_08",
+      "nativeFacing": "Right",
+      "set": "5603c2928d7c6b291115379125421c30"
+    },
+    "big-fish-03": {
+      "count": 16,
+      "source": "bigfish_10",
+      "nativeFacing": "Right",
+      "set": "2b17aa80a520bad5a3f51b693d9d4f4d"
+    },
+    "big-fish-04": {
+      "count": 13,
+      "source": "bigfish_05",
+      "nativeFacing": "Left",
+      "set": "57b080f71592c81149978aab7cb92847"
+    },
+    "big-fish-05": {
+      "count": 13,
+      "source": "bigfish_07",
+      "nativeFacing": "Left",
+      "set": "c6b996952448a164b421648b75cbe942"
+    },
+    "big-fish-06": {
+      "count": 13,
+      "source": "bigfish_09",
+      "nativeFacing": "Left",
+      "set": "63f32cd18d391fd29407e927aa3bd4d2"
+    },
+    "toxic-fish-01": {
+      "count": 11,
+      "source": "bigfish_02",
+      "nativeFacing": "Right",
+      "set": "a429264114aa8b8f372ba72a3dd0b4ca"
+    },
+    "toxic-fish-02": {
+      "count": 11,
+      "source": "bigfish_04",
+      "nativeFacing": "Right",
+      "set": "a318b1f71ed2fb059a14759119243a35"
+    },
+    "toxic-fish-03": {
+      "count": 11,
+      "source": "bigfish_03",
+      "nativeFacing": "Right",
+      "set": "f1963193e5923bbfb4e80ec97f8e52e9"
+    },
+    "toxic-fish-04": {
+      "count": 9,
+      "source": "bigfish_01",
+      "nativeFacing": "Left",
+      "set": "e0ee59d3e7fe13e5a2770aaa253030ff"
+    }
+  },
+  "dest_map": {
+    "small-fish-01": {
+      "source": "fish_03",
+      "nativeFacing": "Right"
+    },
+    "small-fish-02": {
+      "source": "fish_06",
+      "nativeFacing": "Right"
+    },
+    "small-fish-03": {
+      "source": "fish_10",
+      "nativeFacing": "Right"
+    },
+    "small-fish-04": {
+      "source": "fish_09",
+      "nativeFacing": "Left",
+      "note": "Source fish_09 faces Right; frames flipped to match sheet Left"
+    },
+    "small-fish-05": {
+      "source": "fish_08",
+      "nativeFacing": "Left"
+    },
+    "small-fish-06": {
+      "source": "fish_02",
+      "nativeFacing": "Left"
+    },
+    "small-fish-07": {
+      "source": "fish_04",
+      "nativeFacing": "Left"
+    },
+    "small-fish-08": {
+      "source": "fish_05",
+      "nativeFacing": "Left"
+    },
+    "small-fish-09": {
+      "source": "fish_07",
+      "nativeFacing": "Left"
+    },
+    "small-fish-10": {
+      "source": "fish_01",
+      "nativeFacing": "Left"
+    },
+    "jelly-01": {
+      "source": "jellyfish_02",
+      "nativeFacing": "Right"
+    },
+    "jelly-02": {
+      "source": "jellyfish_04",
+      "nativeFacing": "Right"
+    },
+    "jelly-03": {
+      "source": "jellyfish_06",
+      "nativeFacing": "Right"
+    },
+    "jelly-04": {
+      "source": "jellyfish_07",
+      "nativeFacing": "Right"
+    },
+    "jelly-05": {
+      "source": "jellyfish_09",
+      "nativeFacing": "Right"
+    },
+    "jelly-06": {
+      "source": "jellyfish_01",
+      "nativeFacing": "Left"
+    },
+    "jelly-07": {
+      "source": "jellyfish_03",
+      "nativeFacing": "Left"
+    },
+    "jelly-08": {
+      "source": "jellyfish_08",
+      "nativeFacing": "Left"
+    },
+    "jelly-09": {
+      "source": "jellyfish_10",
+      "nativeFacing": "Left"
+    },
+    "big-fish-01": {
+      "source": "bigfish_06",
+      "nativeFacing": "Right"
+    },
+    "big-fish-02": {
+      "source": "bigfish_08",
+      "nativeFacing": "Right"
+    },
+    "big-fish-03": {
+      "source": "bigfish_10",
+      "nativeFacing": "Right"
+    },
+    "big-fish-04": {
+      "source": "bigfish_05",
+      "nativeFacing": "Left"
+    },
+    "big-fish-05": {
+      "source": "bigfish_07",
+      "nativeFacing": "Left"
+    },
+    "big-fish-06": {
+      "source": "bigfish_09",
+      "nativeFacing": "Left"
+    },
+    "toxic-fish-01": {
+      "source": "bigfish_02",
+      "nativeFacing": "Right"
+    },
+    "toxic-fish-02": {
+      "source": "bigfish_04",
+      "nativeFacing": "Right"
+    },
+    "toxic-fish-03": {
+      "source": "bigfish_03",
+      "nativeFacing": "Right"
+    },
+    "toxic-fish-04": {
+      "source": "bigfish_01",
+      "nativeFacing": "Left"
+    }
+  }
+}

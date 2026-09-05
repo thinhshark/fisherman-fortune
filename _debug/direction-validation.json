@@ -1,0 +1,350 @@
+[
+  {
+    "id": "small-fish-01",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-02",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-03",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-04",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-05",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-06",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-07",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-08",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-09",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "small-fish-10",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-01",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-02",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-03",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-04",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-05",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-06",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-07",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-08",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "jelly-09",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "big-fish-01",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "big-fish-02",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "big-fish-03",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "big-fish-04",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "big-fish-05",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "big-fish-06",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "toxic-fish-01",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "toxic-fish-02",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "toxic-fish-03",
+    "nativeFacing": "Right",
+    "leftMove": {
+      "flipX": true,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": false,
+      "velocitySign": 1
+    }
+  },
+  {
+    "id": "toxic-fish-04",
+    "nativeFacing": "Left",
+    "leftMove": {
+      "flipX": false,
+      "velocitySign": -1
+    },
+    "rightMove": {
+      "flipX": true,
+      "velocitySign": 1
+    }
+  }
+]
