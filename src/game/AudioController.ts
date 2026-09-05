@@ -33,12 +33,10 @@ import { BARREL_EXPLODED_EVENT } from "./ItemSpawner";
 const DEBUG_AUDIO = false;
 
 const MUSIC_GAME_KEY = "music-game";
-/** Asset exists but must never be requested/played as Home BGM. */
-const MUSIC_STORY_KEY = "music-story";
 const WINCH_KEY = "sfx-winch";
 const CATCH_VOLUME_SCALE = 0.35;
 
-const BGM_KEYS = [MUSIC_GAME_KEY, MUSIC_STORY_KEY] as const;
+const BGM_KEYS = [MUSIC_GAME_KEY] as const;
 
 export const SFX_PREF_KEY_V1 = "fisherman-fortune-sfx-enabled-v1";
 export const MUSIC_PREF_KEY_V1 = "fisherman-fortune-music-enabled-v1";

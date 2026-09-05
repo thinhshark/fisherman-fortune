@@ -1,50 +1,6 @@
 {
     "anims": [
         {
-            "key": "story-bg",
-            "frameRate": 8,
-            "repeat": -1,
-            "delay": 0,
-            "repeatDelay": 0,
-            "yoyo": false,
-            "showOnStart": false,
-            "hideOnComplete": false,
-            "skipMissedFrames": true,
-            "frames": [
-                {
-                    "key": "story-bg-001"
-                },
-                {
-                    "key": "story-bg-002"
-                },
-                {
-                    "key": "story-bg-003"
-                },
-                {
-                    "key": "story-bg-004"
-                }
-            ]
-        },
-        {
-            "key": "deco-pillar",
-            "frameRate": 6,
-            "repeat": -1,
-            "delay": 0,
-            "repeatDelay": 0,
-            "yoyo": false,
-            "showOnStart": false,
-            "hideOnComplete": false,
-            "skipMissedFrames": true,
-            "frames": [
-                {
-                    "key": "deco-pillar-001"
-                },
-                {
-                    "key": "deco-pillar-002"
-                }
-            ]
-        },
-        {
             "key": "player-idle",
             "frameRate": 8,
             "repeat": -1,
