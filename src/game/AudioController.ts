@@ -16,6 +16,7 @@ import {
 	type TimeBonusPayload,
 	type TimeChangedPayload,
 } from "./GameSession";
+import { BARREL_EXPLODED_EVENT } from "./ItemSpawner";
 
 /**
  * Single owner of Level background music + SFX.
@@ -130,6 +131,7 @@ export class AudioController {
 	private readonly boundTimeBonus = this.handleTimeBonus.bind(this);
 	private readonly boundTimeChanged = this.handleTimeChanged.bind(this);
 	private readonly boundGameFinished = this.handleGameFinished.bind(this);
+	private readonly boundBarrelExploded = this.handleBarrelExploded.bind(this);
 	private readonly boundUnlockPointer = this.handleUnlockGesture.bind(this);
 	private readonly boundUnlockSpace = this.handleUnlockGesture.bind(this);
 	private readonly boundDestroy = this.destroy.bind(this);
@@ -149,6 +151,7 @@ export class AudioController {
 		scene.events.on(TIME_BONUS_EVENT, this.boundTimeBonus);
 		scene.events.on(TIME_CHANGED_EVENT, this.boundTimeChanged);
 		scene.events.on(GAME_FINISHED_EVENT, this.boundGameFinished);
+		scene.events.on(BARREL_EXPLODED_EVENT, this.boundBarrelExploded);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.boundDestroy);
 		scene.events.once(Phaser.Scenes.Events.DESTROY, this.boundDestroy);
 
@@ -538,6 +541,7 @@ export class AudioController {
 		this.scene.events.off(TIME_BONUS_EVENT, this.boundTimeBonus);
 		this.scene.events.off(TIME_CHANGED_EVENT, this.boundTimeChanged);
 		this.scene.events.off(GAME_FINISHED_EVENT, this.boundGameFinished);
+		this.scene.events.off(BARREL_EXPLODED_EVENT, this.boundBarrelExploded);
 		this.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.boundDestroy);
 		this.scene.events.off(Phaser.Scenes.Events.DESTROY, this.boundDestroy);
 
@@ -727,24 +731,34 @@ export class AudioController {
 			case "diamond":
 			case "emerald":
 			case "ruby":
-			case "valuable":
+			case "pearl":
 				return "sfx-jewel";
 			case "bag":
-				return "sfx-gold";
+			case "gift":
+				return "sfx-bonus";
 			case "bone":
 				return "sfx-bone";
 			case "skull":
 				return "sfx-skull";
 			case "barrel":
-				return "sfx-stone";
+				return "sfx-explosion";
 			case "star":
 			case "bonus-power":
+				return "sfx-bonus";
+			case "light":
 				return "sfx-bonus";
 			case "bonus-bomb":
 				return "sfx-bomb";
 			default:
 				return "sfx-score";
 		}
+	}
+
+	private handleBarrelExploded(): void {
+		if (this.destroyed || this.pauseOverlayOpen || !this.gameplayActive) {
+			return;
+		}
+		this.playSfx("sfx-explosion", { volume: AudioSettings.catchVolume });
 	}
 
 	private handleScoreChanged(payload: ScoreChangedPayload): void {
@@ -764,11 +778,10 @@ export class AudioController {
 			const item = getItemById(payload.sourceId);
 			if (item) {
 				key = this.itemSfxKey(item.id);
-			} else if (
-				payload.effectType === "gem" ||
-				payload.effectType === "valuable"
-			) {
+			} else if (payload.effectType === "gem") {
 				key = "sfx-jewel";
+			} else if (payload.effectType === "gift") {
+				key = "sfx-bonus";
 			} else if (payload.effectType === "scrap") {
 				key = this.itemSfxKey(payload.sourceId);
 			}

@@ -7,7 +7,11 @@ import {
 } from "./CatchController";
 import type { CreatureCategory } from "./CreatureCatalog";
 import { getCreatureBalance } from "./config/CreatureBalance";
-import { getItemBalance } from "./config/ItemBalance";
+import {
+	getItemBalance,
+	pickGiftOutcome,
+	type ItemBalanceEntry,
+} from "./config/ItemBalance";
 import type { ItemEffectType } from "./ItemCatalog";
 
 export const SCORE_CHANGED_EVENT = "score-changed";
@@ -298,16 +302,12 @@ export class GameSession {
 			);
 		}
 
-		switch (balance.effectType) {
-			case "scrap":
-			case "gem":
-			case "valuable": {
-				const roll = Phaser.Math.Between(
-					balance.rewardMin,
-					balance.rewardMax,
-				);
-				const delta =
-					balance.rewardOperation === "subtract" ? -roll : roll;
+		switch (balance.rewardType) {
+			case "score": {
+				const delta = balance.scoreValue;
+				if (delta === 0) {
+					break;
+				}
 				this._score = Math.max(0, this._score + delta);
 				this.scene.events.emit(SCORE_CHANGED_EVENT, {
 					totalScore: this._score,
@@ -321,7 +321,7 @@ export class GameSession {
 				break;
 			}
 			case "time": {
-				const bonus = balance.timeBonusSeconds;
+				const bonus = balance.timeValue;
 				this.addTime(bonus);
 				this.scene.events.emit(TIME_BONUS_EVENT, {
 					secondsAdded: bonus,
@@ -332,23 +332,54 @@ export class GameSession {
 				} satisfies TimeBonusPayload);
 				break;
 			}
+			case "gift": {
+				this.applyGiftReward(balance, payload);
+				break;
+			}
 			case "bomb":
-			case "power": {
-				this.scene.events.emit(BONUS_COLLECTED_EVENT, {
-					itemId: payload.id,
-					effectType: balance.effectType,
-					deliveryX: payload.deliveryX,
-					deliveryY: payload.deliveryY,
-				} satisfies BonusCollectedPayload);
+			case "none": {
 				break;
 			}
 			default: {
-				const invalid: never = balance.effectType;
+				const invalid: never = balance.rewardType;
 				throw new Error(
-					`Unhandled item effectType: ${String(invalid)}`,
+					`Unhandled item rewardType: ${String(invalid)}`,
 				);
 			}
 		}
+	}
+
+	private applyGiftReward(
+		balance: ItemBalanceEntry,
+		payload: ItemDeliveredPayload,
+	): void {
+		if (balance.giftVoucherEnabled) {
+			return;
+		}
+		const outcome = pickGiftOutcome(balance, Math.random, (min, max) =>
+			Phaser.Math.Between(min, max),
+		);
+		if (outcome.kind === "money") {
+			this._score = Math.max(0, this._score + outcome.amount);
+			this.scene.events.emit(SCORE_CHANGED_EVENT, {
+				totalScore: this._score,
+				delta: outcome.amount,
+				sourceKind: "item",
+				sourceId: payload.id,
+				effectType: "gift",
+				deliveryX: payload.deliveryX,
+				deliveryY: payload.deliveryY,
+			} satisfies ScoreChangedPayload);
+			return;
+		}
+		this.addTime(outcome.seconds);
+		this.scene.events.emit(TIME_BONUS_EVENT, {
+			secondsAdded: outcome.seconds,
+			sourceId: payload.id,
+			deliveryX: payload.deliveryX,
+			deliveryY: payload.deliveryY,
+			remainingSeconds: this.remainingSeconds,
+		} satisfies TimeBonusPayload);
 	}
 
 	private emitFinishedOnce(): void {

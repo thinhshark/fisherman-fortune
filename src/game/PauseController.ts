@@ -12,8 +12,9 @@ const DISABLED_ALPHA = 0.45;
 const PAUSE_BUTTON_Y = 42;
 const PAUSE_BUTTON_SCALE = 0.55;
 const TITLE_SCALE = 0.55;
-const CONTINUE_SCALE = 0.9;
-const HOME_SCALE = 1.05;
+/** Continue is a wide pill; jungle squares share ACTION_SCALE. */
+const CONTINUE_SCALE = 0.85;
+const ACTION_SCALE = 0.95;
 const TOGGLE_SCALE = 0.72;
 const MIN_HIT = 72;
 
@@ -22,10 +23,16 @@ export interface PauseControllerOptions {
 	onPausedChanged: (paused: boolean) => void;
 	/** Abort run and return to Home without GAME_FINISHED / score save. */
 	onHome: () => void;
+	/** Close pause and restart a fresh gameplay session in-place. */
+	onReplay: () => void;
 }
 
 /**
- * In-game pause: Continue, Home, separate Sound / Music toggles.
+ * In-game pause: Continue, Replay, Home, separate Sound / Music toggles.
+ *
+ * Textures (visual inspection):
+ * - Replay → restart-001 / restart-002 (circular arrows)
+ * - Home → return-001 / return-002 (back arrow; menu-001 is the list/leaderboard glyph)
  */
 export class PauseController {
 	private readonly scene: Phaser.Scene;
@@ -33,6 +40,7 @@ export class PauseController {
 	private readonly canPauseFn: () => boolean;
 	private readonly onPausedChanged: (paused: boolean) => void;
 	private readonly onHome: () => void;
+	private readonly onReplay: () => void;
 
 	private readonly boundToggleKey = this.handleToggleKey.bind(this);
 	private readonly boundResize = this.layout.bind(this);
@@ -40,6 +48,7 @@ export class PauseController {
 	private readonly boundFinished = this.handleGameFinished.bind(this);
 	private readonly boundPauseButton = this.handlePauseButton.bind(this);
 	private readonly boundContinue = this.handleContinue.bind(this);
+	private readonly boundReplay = this.handleReplay.bind(this);
 	private readonly boundHome = this.handleHome.bind(this);
 	private readonly boundSound = this.handleSoundToggle.bind(this);
 	private readonly boundMusic = this.handleMusicToggle.bind(this);
@@ -49,6 +58,7 @@ export class PauseController {
 	private blocker?: Phaser.GameObjects.Rectangle;
 	private title?: Phaser.GameObjects.Image;
 	private continueButton?: Phaser.GameObjects.Image;
+	private replayButton?: Phaser.GameObjects.Image;
 	private homeButton?: Phaser.GameObjects.Image;
 	private soundButton?: Phaser.GameObjects.Image;
 	private musicButton?: Phaser.GameObjects.Image;
@@ -58,6 +68,7 @@ export class PauseController {
 	private destroyed = false;
 	private pauseAllowed = false;
 	private homeArmed = true;
+	private replayArmed = true;
 	private soundArmed = true;
 	private musicArmed = true;
 	private overlayBuilt = false;
@@ -72,6 +83,7 @@ export class PauseController {
 		this.canPauseFn = options.canPause;
 		this.onPausedChanged = options.onPausedChanged;
 		this.onHome = options.onHome;
+		this.onReplay = options.onReplay;
 
 		this.requireTextures();
 		this.buildPauseButton();
@@ -182,8 +194,10 @@ export class PauseController {
 			"pause-002",
 			"continue-001",
 			"continue-002",
-			"menu-001",
-			"menu-002",
+			"restart-001",
+			"restart-002",
+			"return-001",
+			"return-002",
 			"sound-001",
 			"sound-002",
 			"music-001",
@@ -262,11 +276,18 @@ export class PauseController {
 			CONTINUE_SCALE,
 			this.boundContinue,
 		);
+		this.replayButton = this.createActionButton(
+			"restart-001",
+			"restart-002",
+			"pauseReplay",
+			ACTION_SCALE,
+			this.boundReplay,
+		);
 		this.homeButton = this.createActionButton(
-			"menu-001",
-			"menu-002",
+			"return-001",
+			"return-002",
 			"pauseHome",
-			HOME_SCALE,
+			ACTION_SCALE,
 			this.boundHome,
 		);
 		this.soundButton = this.createStateToggleButton(
@@ -352,6 +373,7 @@ export class PauseController {
 		this.buildOverlay();
 		this._isVisible = true;
 		this.homeArmed = true;
+		this.replayArmed = true;
 		this.soundArmed = true;
 		this.musicArmed = true;
 		this.setOverlayVisible(true);
@@ -363,7 +385,8 @@ export class PauseController {
 		this._isVisible = false;
 		this.setOverlayVisible(false);
 		this.continueButton?.setTexture("continue-001");
-		this.homeButton?.setTexture("menu-001");
+		this.replayButton?.setTexture("restart-001");
+		this.homeButton?.setTexture("return-001");
 		this.refreshToggleAppearance();
 	}
 
@@ -379,6 +402,7 @@ export class PauseController {
 		this.blocker?.setVisible(visible);
 		this.title?.setVisible(visible);
 		this.continueButton?.setVisible(visible);
+		this.replayButton?.setVisible(visible);
 		this.homeButton?.setVisible(visible);
 		this.soundButton?.setVisible(visible);
 		this.musicButton?.setVisible(visible);
@@ -386,6 +410,9 @@ export class PauseController {
 		if (visible) {
 			this.blocker?.setInteractive();
 			this.continueButton?.setInteractive();
+			if (this.replayArmed) {
+				this.replayButton?.setInteractive();
+			}
 			if (this.homeArmed) {
 				this.homeButton?.setInteractive();
 			}
@@ -395,6 +422,7 @@ export class PauseController {
 		} else {
 			this.blocker?.disableInteractive();
 			this.continueButton?.disableInteractive();
+			this.replayButton?.disableInteractive();
 			this.homeButton?.disableInteractive();
 			this.soundButton?.disableInteractive();
 			this.musicButton?.disableInteractive();
@@ -437,8 +465,10 @@ export class PauseController {
 		}
 
 		this.title?.setPosition(cx, cy - 130);
-		this.continueButton?.setPosition(cx - 120, cy - 10);
-		this.homeButton?.setPosition(cx + 120, cy - 10);
+		// Resume | Replay | Home — evenly spaced, no overlap at 1280×720.
+		this.continueButton?.setPosition(cx - 160, cy - 10);
+		this.replayButton?.setPosition(cx, cy - 10);
+		this.homeButton?.setPosition(cx + 160, cy - 10);
 		this.soundButton?.setPosition(cx - 90, cy + 130);
 		this.musicButton?.setPosition(cx + 90, cy + 130);
 
@@ -449,6 +479,7 @@ export class PauseController {
 		const buttons = [
 			this.pauseButton,
 			this.continueButton,
+			this.replayButton,
 			this.homeButton,
 			this.soundButton,
 			this.musicButton,
@@ -512,6 +543,24 @@ export class PauseController {
 		}
 		this.audio.playButtonSfx();
 		this.resume();
+	}
+
+	private handleReplay(): void {
+		if (this.destroyed || !this._isPaused || !this.replayArmed) {
+			return;
+		}
+		this.replayArmed = false;
+		this.replayButton?.disableInteractive();
+		this.audio.playButtonSfx();
+
+		// Close overlay and restore systems before restart (same as Play Again).
+		this._isPaused = false;
+		this.hideOverlay();
+		this.setPauseButtonVisible(false);
+		this.pauseAllowed = false;
+		this.audio.clearPauseHold();
+		this.onPausedChanged(false);
+		this.onReplay();
 	}
 
 	private handleHome(): void {
@@ -594,11 +643,13 @@ export class PauseController {
 
 	private teardownOverlay(): void {
 		this.continueButton?.off("pointerup", this.boundContinue);
+		this.replayButton?.off("pointerup", this.boundReplay);
 		this.homeButton?.off("pointerup", this.boundHome);
 		this.soundButton?.off("pointerup", this.boundSound);
 		this.musicButton?.off("pointerup", this.boundMusic);
 
 		this.continueButton?.destroy();
+		this.replayButton?.destroy();
 		this.homeButton?.destroy();
 		this.soundButton?.destroy();
 		this.musicButton?.destroy();
@@ -607,6 +658,7 @@ export class PauseController {
 		this.overlay?.destroy();
 
 		this.continueButton = undefined;
+		this.replayButton = undefined;
 		this.homeButton = undefined;
 		this.soundButton = undefined;
 		this.musicButton = undefined;

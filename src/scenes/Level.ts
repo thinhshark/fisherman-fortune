@@ -20,10 +20,13 @@ import { AudioController } from "../game/AudioController";
 import { PauseController } from "../game/PauseController";
 import { HomeController } from "../game/HomeController";
 import { FlutterGameBridge } from "../game/FlutterGameBridge";
+import { ActiveTypeRegistry } from "../game/ActiveTypeRegistry";
+import { EnvironmentEffects } from "../game/EnvironmentEffects";
 import {
 	consumeLevelBootIntent,
 	setLevelBootIntent,
 } from "../game/LevelBoot";
+import { DEBUG_PULL_SPEED } from "../game/config/CreatureBalance";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -102,6 +105,8 @@ export default class Level extends Phaser.Scene {
 	private gameOverController!: GameOverController;
 	private hudController!: HudController;
 	private itemSpawner!: ItemSpawner;
+	private activeTypes!: ActiveTypeRegistry;
+	private environmentEffects?: EnvironmentEffects;
 	private audioController?: AudioController;
 	private pauseController!: PauseController;
 	private homeController?: HomeController;
@@ -121,12 +126,22 @@ export default class Level extends Phaser.Scene {
 		this.audioController?.destroy();
 		this.homeController?.destroy();
 		this.homeController = undefined;
+		this.environmentEffects?.destroy();
+		this.environmentEffects = undefined;
+		this.activeTypes?.destroy();
 
+		this.activeTypes = new ActiveTypeRegistry();
 		this.itemSpawner = this.createItemSpawner();
 		this.hookController = this.createHookController();
 		this.creatureSpawner = this.createCreatureSpawner();
+		this.environmentEffects = new EnvironmentEffects(
+			this,
+			this.player,
+			this.water,
+		);
 		this.catchController = this.createCatchController();
 		this.gameSession = new GameSession(this);
+		this.exposePullDebugBridge();
 		this.catchFeedbackController = new CatchFeedbackController(this);
 		this.hudController = new HudController(this);
 		this.hudController.setVisible(true);
@@ -141,6 +156,7 @@ export default class Level extends Phaser.Scene {
 				this.gameSession.state === "playing" && !this.endingHandled,
 			onPausedChanged: (paused) => this.applyGameplayPaused(paused),
 			onHome: () => this.handlePauseHome(),
+			onReplay: () => this.handlePauseReplay(),
 		});
 		this.pauseController.setGameplayActive(false);
 
@@ -162,6 +178,9 @@ export default class Level extends Phaser.Scene {
 			this.catchController?.destroy();
 			this.creatureSpawner?.destroy();
 			this.itemSpawner?.destroy();
+			this.environmentEffects?.destroy();
+			this.environmentEffects = undefined;
+			this.activeTypes?.destroy();
 		});
 
 		if (bootIntent === "playAgain") {
@@ -197,6 +216,9 @@ export default class Level extends Phaser.Scene {
 			this.skipNextGameplayDelta = false;
 		}
 
+		this.environmentEffects?.update(time, gameplayDelta);
+		// HookController is the single owner of hook extension/position.
+		// Catch runs after it so a claim uses this frame's hook pose, exactly once.
 		this.hookController.update(time, gameplayDelta);
 		this.creatureSpawner.update(time, gameplayDelta);
 		this.itemSpawner.update(time, gameplayDelta);
@@ -241,8 +263,9 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.hookController.beginGameplay();
+		this.environmentEffects?.beginGameplay();
 		this.creatureSpawner.beginSpawning();
-		this.itemSpawner.beginSpawning();
+		this.itemSpawner.beginSpawning(this.creatureSpawner.getActiveCenters());
 		this.catchController.setPaused(false);
 		this.hudController.setVisible(true);
 		this.pauseController.setGameplayActive(true);
@@ -258,6 +281,7 @@ export default class Level extends Phaser.Scene {
 	private applyGameplayPaused(paused: boolean): void {
 		this.gameSession.setPaused(paused);
 		this.hookController.setPaused(paused);
+		this.environmentEffects?.setPaused(paused);
 		this.creatureSpawner.setPaused(paused);
 		this.itemSpawner.setPaused(paused);
 		this.catchController.setPaused(paused);
@@ -287,6 +311,15 @@ export default class Level extends Phaser.Scene {
 			audio.enterHomeScreen();
 		}
 		setLevelBootIntent("home");
+		this.scene.restart();
+	}
+
+	/** Pause → Replay: same clean restart path as Game Over → Play Again. */
+	private handlePauseReplay(): void {
+		this.endingHandled = true;
+		this.pauseController.setGameplayActive(false);
+		this.audioController?.clearPauseHold();
+		setLevelBootIntent("playAgain");
 		this.scene.restart();
 	}
 
@@ -331,6 +364,24 @@ export default class Level extends Phaser.Scene {
 		// RETRACTING: continue; CatchController delivers once at boat.
 	}
 
+	/**
+	 * Temporary pull-speed diagnostics (DEBUG_PULL_SPEED only): lets a dev
+	 * console inspect the live controllers and verify one hook owner exists.
+	 */
+	private exposePullDebugBridge(): void {
+		if (!DEBUG_PULL_SPEED) {
+			return;
+		}
+		(
+			window as unknown as { __ffPullDebug?: unknown }
+		).__ffPullDebug = {
+			scene: this,
+			hook: this.hookController,
+			catch: this.catchController,
+			creatures: this.creatureSpawner,
+		};
+	}
+
 	private createHookController(): HookController {
 		const rope = this.rope;
 		const hookLeft = this.hookLeft;
@@ -342,7 +393,7 @@ export default class Level extends Phaser.Scene {
 			);
 		}
 
-		return new HookController(this, rope, hookLeft, hookRight);
+		return new HookController(this, rope, hookLeft, hookRight, this.player);
 	}
 
 	private createCreatureSpawner(): CreatureSpawner {
@@ -352,7 +403,10 @@ export default class Level extends Phaser.Scene {
 				"Level is missing required scene object: water must exist for creature spawning.",
 			);
 		}
-		return new CreatureSpawner(this, water);
+		const boatAnchor = this.rope
+			? { x: this.rope.x }
+			: { x: this.player?.x ?? this.scale.width * 0.5 };
+		return new CreatureSpawner(this, water, this.activeTypes, boatAnchor);
 	}
 
 	private createItemSpawner(): ItemSpawner {
@@ -365,7 +419,7 @@ export default class Level extends Phaser.Scene {
 		const boatAnchor = this.rope
 			? { x: this.rope.x, y: this.rope.y }
 			: { x: this.player?.x ?? this.scale.width * 0.5, y: water.y };
-		return new ItemSpawner(this, water, boatAnchor);
+		return new ItemSpawner(this, water, this.activeTypes, boatAnchor);
 	}
 
 	private createCatchController(): CatchController {

@@ -10,12 +10,15 @@
 import {
 	CREATURE_BALANCE,
 	getCreatureBalance,
+	PULL_SPEED_BY_WEIGHT,
 	type CreatureBalanceEntry,
 	type CreatureWeight,
+	type MovementDirection,
+	type NativeFacing,
 	type SpawnZoneLabel,
 } from "./config/CreatureBalance";
 
-export type { CreatureWeight, SpawnZoneLabel };
+export type { CreatureWeight, MovementDirection, NativeFacing, SpawnZoneLabel };
 /** @deprecated Use `CreatureWeight`. */
 export type WeightLabel = CreatureWeight;
 
@@ -29,6 +32,7 @@ export type CreatureCategory =
 
 export type SpeedLabel = "Fast" | "Medium" | "Slow";
 export type FrequencyLabel = "Often" | "Normal" | "Medium" | "Seldom";
+/** @deprecated Use `NativeFacing` ("Left" | "Right"). */
 export type Facing = "right" | "left";
 
 /** Construct layout resolution → Phaser Level resolution. */
@@ -99,10 +103,14 @@ export interface CreatureDefinition {
 	frequencyWeight: number;
 	frequencyLabel: FrequencyLabel;
 	spawnZone: readonly SpawnZoneLabel[];
-	defaultFacing: Facing;
+	/** Artwork faces this way; spawner flips when it differs from movement. */
+	nativeFacing: NativeFacing;
 	isCrab: boolean;
 	isToxic: boolean;
 	scale: number;
+	/** Optional underwater-height ratios (0=top … 1=bottom). */
+	spawnYMinRatio?: number;
+	spawnYMaxRatio?: number;
 }
 
 function valueSpec(raw: string, min: number, max: number): CreatureValueSpec {
@@ -195,7 +203,6 @@ function buildCreature(
 	id: string,
 	category: CreatureCategory,
 	animSuffix: "swim" | "walk",
-	defaultFacing: Facing,
 ): CreatureDefinition {
 	const balance = getCreatureBalance(id);
 	if (!balance) {
@@ -216,53 +223,14 @@ function buildCreature(
 		frequencyWeight: balance.spawnWeight,
 		frequencyLabel: sheet.frequencyLabel,
 		spawnZone: balance.spawnZones,
-		defaultFacing,
+		nativeFacing: balance.nativeFacing,
 		isCrab: sheet.isCrab,
 		isToxic: sheet.isToxic,
 		scale: balance.scale,
+		spawnYMinRatio: balance.spawnYMinRatio,
+		spawnYMaxRatio: balance.spawnYMaxRatio,
 	};
 }
-
-/**
- * Per-asset facing from first animation frame inspection.
- * Crabs are front-facing/symmetrical; Construct Bullet speed is -30 (left)
- * with no Mirrored flag, so source art is treated as facing left.
- */
-const DEFAULT_FACING_BY_ID: Readonly<Record<string, Facing>> = {
-	"small-fish-01": "left",
-	"small-fish-02": "left",
-	"small-fish-03": "right",
-	"small-fish-04": "left",
-	"small-fish-05": "left",
-	"small-fish-06": "right",
-	"small-fish-07": "left",
-	"small-fish-08": "left",
-	"small-fish-09": "right",
-	"small-fish-10": "right",
-	"jelly-01": "left",
-	"jelly-02": "right",
-	"jelly-03": "left",
-	"jelly-04": "right",
-	"jelly-05": "left",
-	"jelly-06": "right",
-	"jelly-07": "right",
-	"jelly-08": "left",
-	"jelly-09": "right",
-	"big-fish-01": "left",
-	"big-fish-02": "right",
-	"big-fish-03": "left",
-	"big-fish-04": "right",
-	"big-fish-05": "left",
-	"big-fish-06": "right",
-	"toxic-fish-01": "left",
-	"toxic-fish-02": "right",
-	"toxic-fish-03": "left",
-	"toxic-fish-04": "right",
-	"normal-crab-01": "left",
-	"normal-crab-02": "left",
-	"rare-crab-01": "left",
-	"rare-crab-02": "left",
-};
 
 function numbered(
 	prefix: string,
@@ -273,11 +241,7 @@ function numbered(
 	const list: CreatureDefinition[] = [];
 	for (let i = 1; i <= count; i += 1) {
 		const id = `${prefix}-${String(i).padStart(2, "0")}`;
-		const facing = DEFAULT_FACING_BY_ID[id];
-		if (!facing) {
-			throw new Error(`Missing defaultFacing for creature id: ${id}`);
-		}
-		list.push(buildCreature(id, category, animSuffix, facing));
+		list.push(buildCreature(id, category, animSuffix));
 	}
 	return list;
 }
@@ -346,6 +310,11 @@ for (const creature of CREATURE_CATALOG) {
 		if (creature.weight !== "Heavy") {
 			throw new Error(
 				`${creature.id} must have weight "Heavy", got ${creature.weight}`,
+			);
+		}
+		if (creature.retractSpeed !== PULL_SPEED_BY_WEIGHT.Heavy) {
+			throw new Error(
+				`${creature.id} retractSpeed must be ${PULL_SPEED_BY_WEIGHT.Heavy}, got ${creature.retractSpeed}`,
 			);
 		}
 	}

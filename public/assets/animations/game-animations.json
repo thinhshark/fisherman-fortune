@@ -107,46 +107,6 @@
             ]
         },
         {
-            "key": "valuable",
-            "frameRate": 10,
-            "repeat": -1,
-            "delay": 0,
-            "repeatDelay": 0,
-            "yoyo": false,
-            "showOnStart": false,
-            "hideOnComplete": false,
-            "skipMissedFrames": true,
-            "frames": [
-                {
-                    "key": "valuable-001"
-                },
-                {
-                    "key": "valuable-002"
-                },
-                {
-                    "key": "valuable-003"
-                },
-                {
-                    "key": "valuable-004"
-                },
-                {
-                    "key": "valuable-005"
-                },
-                {
-                    "key": "valuable-006"
-                },
-                {
-                    "key": "valuable-007"
-                },
-                {
-                    "key": "valuable-008"
-                },
-                {
-                    "key": "valuable-009"
-                }
-            ]
-        },
-        {
             "key": "explosion-barrel",
             "frameRate": 16,
             "repeat": 0,

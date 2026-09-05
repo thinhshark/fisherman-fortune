@@ -1,9 +1,11 @@
 import Phaser from "phaser";
+import { type CreatureCategory } from "./CreatureCatalog";
+import { DEBUG_PULL_SPEED } from "./config/CreatureBalance";
 import {
-	assertCreatureWeight,
-	type CreatureCategory,
-	type CreatureWeight,
-} from "./CreatureCatalog";
+	HOOK_JAWS,
+	HOOK_JAW_TRANSITION_MS,
+	HOOK_SWING,
+} from "./config/HookConfig";
 
 export type HookState = "SWINGING" | "CASTING" | "RETRACTING";
 export type RetractReason = "empty" | "caught";
@@ -19,79 +21,17 @@ export interface HookStateChangedPayload {
 	category?: CreatureCategory;
 }
 
-/** Dev-only: log once when a retraction begins. */
-const LOG_RETRACTION = false;
-
 /** Dev-only: log once per state change with jaw target deltas. */
 const LOG_JAW_TARGETS = false;
 
+/**
+ * The only speed constant this controller owns. Every caught-object speed
+ * comes from the caught definition's CreatureBalance/ItemBalance retractSpeed.
+ */
 export const EMPTY_RETRACT_SPEED_PX_PER_SEC = 850;
 
-export const CAUGHT_RETRACT_SPEED_PX_PER_SEC: Record<CreatureWeight, number> = {
-	Light: 500,
-	Medium: 280,
-	Heavy: 120,
-};
-
-/**
- * Exhaustive caught-retract speed lookup.
- * Never returns the empty-hook speed (850).
- */
-export function getRetractSpeed(weight: CreatureWeight): number {
-	assertCreatureWeight(weight);
-	switch (weight) {
-		case "Light":
-			return CAUGHT_RETRACT_SPEED_PX_PER_SEC.Light;
-		case "Medium":
-			return CAUGHT_RETRACT_SPEED_PX_PER_SEC.Medium;
-		case "Heavy":
-			return CAUGHT_RETRACT_SPEED_PX_PER_SEC.Heavy;
-		default: {
-			const invalid: never = weight;
-			throw new Error(`Invalid creature weight: ${String(invalid)}`);
-		}
-	}
-}
-
-/** @deprecated Use `getRetractSpeed`. */
-export const retractSpeedForWeight = getRetractSpeed;
-
-{
-	const extension = 600;
-	const empty = extension / EMPTY_RETRACT_SPEED_PX_PER_SEC;
-	const light = extension / getRetractSpeed("Light");
-	const medium = extension / getRetractSpeed("Medium");
-	const heavy = extension / getRetractSpeed("Heavy");
-
-	if (!(heavy > medium && medium > light && light > empty)) {
-		throw new Error(
-			`Retract duration order invalid for ${extension}px: ` +
-				`empty=${empty}, light=${light}, medium=${medium}, heavy=${heavy}`,
-		);
-	}
-	if (getRetractSpeed("Heavy") !== 120) {
-		throw new Error("Heavy retract speed must be exactly 120 px/s");
-	}
-	if (getRetractSpeed("Light") !== 500) {
-		throw new Error("Light retract speed must be exactly 500 px/s");
-	}
-	if (getRetractSpeed("Medium") !== 280) {
-		throw new Error("Medium retract speed must be exactly 280 px/s");
-	}
-	// Category → weight → speed contracts.
-	if (getRetractSpeed("Heavy") !== 120) {
-		throw new Error("Big Fish (Heavy) must select 120 px/s");
-	}
-	if (Math.abs(empty - 600 / 850) > 1e-9) {
-		throw new Error("Empty 600px duration must be 600/850");
-	}
-	if (Math.abs(light - 1.2) > 1e-9) {
-		throw new Error("Light 600px duration must be exactly 1.2s");
-	}
-	if (Math.abs(heavy - 5) > 1e-9) {
-		throw new Error("Heavy 600px duration must be exactly 5s");
-	}
-}
+/** Dev-only: distinguishes controller instances if one ever leaks a restart. */
+let nextHookInstanceId = 1;
 
 interface CapturedImageTransform {
 	worldX: number;
@@ -108,8 +48,26 @@ export interface RetractionStartInfo {
 	creatureId?: string;
 	itemId?: string;
 	category?: CreatureCategory;
-	/** Creature or item weight label (for debug logs only). */
+	/** Creature or item weight label (diagnostics only). */
 	weight?: string;
+	/** Sprite texture key at catch time (diagnostics only). */
+	textureKey?: string;
+	/** Sprite animation key at catch time (diagnostics only). */
+	animationKey?: string;
+}
+
+interface PullMeasureSession {
+	creatureId?: string;
+	itemId?: string;
+	weight?: string;
+	textureKey?: string;
+	animationKey?: string;
+	configuredRetractSpeed: number;
+	effectiveRetractSpeed: number;
+	startExtension: number;
+	expectedDurationMs: number;
+	startedAt: number;
+	frameCount: number;
 }
 
 /**
@@ -119,8 +77,6 @@ export interface RetractionStartInfo {
  * Jaw open/close is applied to nested hinge pivots, not the PNG bounding-box centers.
  */
 export class HookController {
-	private static readonly MAX_ANGLE_DEG = 55;
-	private static readonly CYCLE_MS = 3200;
 	private static readonly CAST_SPEED_PX_PER_SEC = 650;
 	private static readonly HOOK_COLLISION_RADIUS = 32;
 	private static readonly ATTACH_OFFSET_PX = 24;
@@ -130,19 +86,8 @@ export class HookController {
 	private static readonly CAST_ROPE_OUTER_WIDTH = 8;
 	private static readonly CAST_ROPE_INNER_WIDTH = 4;
 
-	/**
-	 * Nested-pivot deltas relative to rest (pivot angle 0).
-	 * Runtime observation: the previous "OPEN" (-35/+35) assignment visually
-	 * closed the claws, and the previous "CLOSED" (+22/-22) visually opened them.
-	 * Names below match the observed visual effect after correcting state mapping.
-	 */
-	private static readonly JAW_OPEN_LEFT_DEG = 22;
-	private static readonly JAW_OPEN_RIGHT_DEG = -22;
-	private static readonly JAW_CLOSED_LEFT_DEG = -35;
-	private static readonly JAW_CLOSED_RIGHT_DEG = 35;
-	private static readonly JAW_TRANSITION_MS = 120;
-
 	private readonly scene: Phaser.Scene;
+	private readonly player?: Phaser.GameObjects.Image;
 	private readonly hookContainer: Phaser.GameObjects.Container;
 	private readonly castRope: Phaser.GameObjects.Graphics;
 	private readonly hookStem: Phaser.GameObjects.Image;
@@ -151,8 +96,12 @@ export class HookController {
 	private readonly hookLeftPivot: Phaser.GameObjects.Container;
 	private readonly hookRightPivot: Phaser.GameObjects.Container;
 
-	private readonly anchorX: number;
-	private readonly anchorY: number;
+	private anchorX: number;
+	private anchorY: number;
+	private readonly anchorLocalX: number;
+	private readonly anchorLocalY: number;
+	/** Swing angle relative to the boat, independent of boat rock. */
+	private swingRotation = 0;
 
 	private readonly ropeLocalX: number;
 	private readonly ropeLocalY: number;
@@ -166,9 +115,16 @@ export class HookController {
 	private elapsedMs = 0;
 	private extension = 0;
 	private maxExtension = 0;
-	/** Active retract speed; only rewritten when a retract begins or delivery finishes. */
-	private currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
-	private retractReason: RetractReason = "empty";
+	/**
+	 * Runtime source of truth for RETRACTING movement (px/s).
+	 * Set once when retract begins; never re-derived from cast/empty speed mid-pull.
+	 */
+	private activeRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+	/** True while a caught object owns the retract speed (blocks empty-speed overwrite). */
+	private caughtPullActive = false;
+	private pullMeasure?: PullMeasureSession;
+	/** Dev-only identity so duplicate controllers are visible in pull logs. */
+	private readonly instanceId = nextHookInstanceId++;
 	private readonly retractCompleteListeners = new Set<() => void>();
 	private readonly spaceKey: Phaser.Input.Keyboard.Key | undefined;
 	/** Cast input starts disabled until Home → Play. */
@@ -195,8 +151,10 @@ export class HookController {
 		rope: Phaser.GameObjects.Image,
 		hookLeft: Phaser.GameObjects.Image,
 		hookRight: Phaser.GameObjects.Image,
+		player?: Phaser.GameObjects.Image,
 	) {
 		this.scene = scene;
+		this.player = player;
 		this.hookStem = rope;
 		this.hookLeft = hookLeft;
 		this.hookRight = hookRight;
@@ -204,6 +162,8 @@ export class HookController {
 		// Rope top-center is already at the boat's circular anchor hole.
 		this.anchorX = rope.x;
 		this.anchorY = rope.y;
+		this.anchorLocalX = player ? rope.x - player.x : 0;
+		this.anchorLocalY = player ? rope.y - player.y : 0;
 
 		const ropeTransform = this.captureTransform(rope);
 		const hookLeftTransform = this.captureTransform(hookLeft);
@@ -251,6 +211,8 @@ export class HookController {
 		this.castRope.setPosition(0, 0);
 
 		this.hookContainer.rotation = 0;
+		this.swingRotation = 0;
+		this.applyBoatAnchor();
 
 		this.spaceKey = scene.input.keyboard?.addKey(
 			Phaser.Input.Keyboard.KeyCodes.SPACE,
@@ -368,12 +330,11 @@ export class HookController {
 	 * Interrupt CASTING and start RETRACTING immediately, keeping the current
 	 * extension and frozen swing angle. Only succeeds while CASTING.
 	 *
-	 * Uses the caller's explicit per-creature retractSpeed for the entire
-	 * caught retraction (no weight fallback, no movementSpeed derivation).
-	 * Sets speed before changing state so the empty-retract path cannot overwrite it.
+	 * Locks `activeRetractSpeed` to the caller's explicit per-object pullSpeed
+	 * for the entire caught retraction (never falls back to empty-hook 850).
 	 */
 	beginRetractingWithCatch(
-		retractSpeed: number,
+		pullSpeed: number,
 		info?: RetractionStartInfo,
 	): boolean {
 		if (this._state !== "CASTING") {
@@ -381,17 +342,18 @@ export class HookController {
 		}
 
 		if (
-			typeof retractSpeed !== "number" ||
-			!Number.isFinite(retractSpeed) ||
-			retractSpeed <= 0
+			typeof pullSpeed !== "number" ||
+			!Number.isFinite(pullSpeed) ||
+			pullSpeed <= 0
 		) {
 			throw new Error(
-				`beginRetractingWithCatch requires a positive retractSpeed, got ${String(retractSpeed)}`,
+				`beginRetractingWithCatch requires a positive pullSpeed, got ${String(pullSpeed)}`,
 			);
 		}
 
-		this.currentRetractSpeed = retractSpeed;
-		this.retractReason = "caught";
+		// Lock before setState so no empty-retract path can overwrite mid-transition.
+		this.activeRetractSpeed = pullSpeed;
+		this.caughtPullActive = true;
 		this.pendingRetractInfo = {
 			retractReason: "caught",
 			creatureId: info?.creatureId,
@@ -399,12 +361,7 @@ export class HookController {
 			category: info?.category,
 		};
 		this.setState("RETRACTING");
-		this.logRetractionStart({
-			creatureId: info?.creatureId,
-			itemId: info?.itemId,
-			category: info?.category,
-			weight: info?.weight,
-		});
+		this.beginPullMeasure(pullSpeed, info);
 		return true;
 	}
 
@@ -428,6 +385,7 @@ export class HookController {
 				this.updateRetracting(delta);
 				break;
 		}
+		this.applyBoatAnchor();
 		this.updateJawAngles(delta);
 	}
 
@@ -454,6 +412,23 @@ export class HookController {
 		this.retractCompleteListeners.clear();
 	}
 
+	private applyBoatAnchor(): void {
+		const player = this.player;
+		if (!player) {
+			this.hookContainer.setPosition(this.anchorX, this.anchorY);
+			this.hookContainer.rotation = this.swingRotation;
+			return;
+		}
+		const cos = Math.cos(player.rotation);
+		const sin = Math.sin(player.rotation);
+		this.anchorX =
+			player.x + this.anchorLocalX * cos - this.anchorLocalY * sin;
+		this.anchorY =
+			player.y + this.anchorLocalX * sin + this.anchorLocalY * cos;
+		this.hookContainer.setPosition(this.anchorX, this.anchorY);
+		this.hookContainer.rotation = player.rotation + this.swingRotation;
+	}
+
 	private handleCastInput(
 		_pointer?: Phaser.Input.Pointer,
 		currentlyOver?: Phaser.GameObjects.GameObject[],
@@ -468,17 +443,21 @@ export class HookController {
 		if (this._state !== "SWINGING") {
 			return;
 		}
+		this.applyBoatAnchor();
 		this.beginCasting();
 	}
 
 	private beginCasting(): void {
 		// Freeze current swing angle; elapsedMs stays put so resume has no jump.
 		this.maxExtension = this.computeMaxSafeExtension(
-			this.hookContainer.rotation,
+			this.player
+				? this.player.rotation + this.swingRotation
+				: this.swingRotation,
 		);
 		this.extension = 0;
-		this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
-		this.retractReason = "empty";
+		this.activeRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+		this.caughtPullActive = false;
+		this.pullMeasure = undefined;
 		this.setState("CASTING");
 		this.applyExtension();
 	}
@@ -486,10 +465,10 @@ export class HookController {
 	private updateSwinging(delta: number): void {
 		this.elapsedMs += delta;
 		const phase =
-			(this.elapsedMs / HookController.CYCLE_MS) * Math.PI * 2;
+			(this.elapsedMs / HOOK_SWING.fullCycleMs) * Math.PI * 2;
 		const angleDeg =
-			HookController.MAX_ANGLE_DEG * Math.sin(phase);
-		this.hookContainer.rotation = Phaser.Math.DegToRad(angleDeg);
+			HOOK_SWING.amplitudeDegrees * Math.sin(phase);
+		this.swingRotation = Phaser.Math.DegToRad(angleDeg);
 	}
 
 	private updateCasting(delta: number): void {
@@ -508,25 +487,35 @@ export class HookController {
 	}
 
 	private beginEmptyRetracting(): void {
-		// Empty-only path. Must never run after a successful catch.
-		this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
-		this.retractReason = "empty";
+		// Empty-only path. Must never run after a successful catch lock.
+		if (this.caughtPullActive) {
+			return;
+		}
+		this.activeRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+		this.caughtPullActive = false;
+		this.pullMeasure = undefined;
 		this.pendingRetractInfo = { retractReason: "empty" };
 		this.setState("RETRACTING");
-		this.logRetractionStart({});
 	}
 
 	private updateRetracting(delta: number): void {
-		const deltaSec = delta / 1000;
-		// Use the speed stored when retraction began — never recompute per frame.
-		this.extension -= this.currentRetractSpeed * deltaSec;
+		// Phaser scene delta is milliseconds — convert before px/s movement.
+		const deltaSeconds = delta / 1000;
+		const remainingDistance = this.extension;
+		const movement = this.activeRetractSpeed * deltaSeconds;
+		this.extension = Math.max(0, remainingDistance - movement);
+
+		if (this.pullMeasure) {
+			this.pullMeasure.frameCount += 1;
+		}
 
 		if (this.extension <= 0) {
 			this.extension = 0;
 			this.applyExtension();
 			this.restoreRestingLocalPositions();
-			this.currentRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
-			this.retractReason = "empty";
+			this.endPullMeasure();
+			this.activeRetractSpeed = EMPTY_RETRACT_SPEED_PX_PER_SEC;
+			this.caughtPullActive = false;
 			this.setState("SWINGING");
 			this.notifyRetractComplete();
 			return;
@@ -554,27 +543,35 @@ export class HookController {
 			this.pendingRetractInfo = undefined;
 		}
 		this.scene.events.emit(HOOK_STATE_CHANGED_EVENT, payload);
+		this.applyJawPoseForState(next);
+	}
 
-		switch (next) {
+	/**
+	 * Single owner of jaw-left / jaw-right local rotations per hook state.
+	 * Independent of HOOK_SWING (container rotation about the boat anchor).
+	 */
+	private applyJawPoseForState(state: HookState): void {
+		switch (state) {
 			case "SWINGING":
-				this.setJawTarget(0, 0);
+				this.setJawTarget(
+					HOOK_JAWS.swinging.left,
+					HOOK_JAWS.swinging.right,
+				);
 				break;
 			case "CASTING":
-				// Visually wider than rest (claw tips farther apart).
 				this.setJawTarget(
-					HookController.JAW_OPEN_LEFT_DEG,
-					HookController.JAW_OPEN_RIGHT_DEG,
+					HOOK_JAWS.casting.left,
+					HOOK_JAWS.casting.right,
 				);
 				break;
 			case "RETRACTING":
-				// Visually closed inward (claw tips closer together).
 				this.setJawTarget(
-					HookController.JAW_CLOSED_LEFT_DEG,
-					HookController.JAW_CLOSED_RIGHT_DEG,
+					HOOK_JAWS.retracting.left,
+					HOOK_JAWS.retracting.right,
 				);
 				break;
 			default: {
-				const invalid: never = next;
+				const invalid: never = state;
 				throw new Error(`Invalid hook state: ${String(invalid)}`);
 			}
 		}
@@ -605,7 +602,7 @@ export class HookController {
 		this.jawTweenElapsedMs += delta;
 		const t = Math.min(
 			1,
-			this.jawTweenElapsedMs / HookController.JAW_TRANSITION_MS,
+			this.jawTweenElapsedMs / HOOK_JAW_TRANSITION_MS,
 		);
 		const k = t * t * (3 - 2 * t);
 		this.hookLeftPivot.setAngle(
@@ -700,24 +697,60 @@ export class HookController {
 		}
 	}
 
-	private logRetractionStart(info: RetractionStartInfo): void {
-		if (!LOG_RETRACTION) {
+	private beginPullMeasure(
+		pullSpeed: number,
+		info?: RetractionStartInfo,
+	): void {
+		const startExtension = this.extension;
+		const expectedDurationMs =
+			pullSpeed > 0
+				? (startExtension / pullSpeed) * 1000
+				: Number.POSITIVE_INFINITY;
+		this.pullMeasure = {
+			creatureId: info?.creatureId,
+			itemId: info?.itemId,
+			weight: info?.weight,
+			textureKey: info?.textureKey,
+			animationKey: info?.animationKey,
+			configuredRetractSpeed: pullSpeed,
+			effectiveRetractSpeed: this.activeRetractSpeed,
+			startExtension,
+			expectedDurationMs,
+			startedAt: this.scene.time.now,
+			frameCount: 0,
+		};
+
+		if (!DEBUG_PULL_SPEED) {
 			return;
 		}
-		const extensionAtStart = this.extension;
-		const selectedRetractSpeed = this.currentRetractSpeed;
-		console.info("[retraction]", {
-			creatureId: info.creatureId,
-			itemId: info.itemId,
-			category: info.category,
-			weight: info.weight,
-			retractReason: this.retractReason,
-			selectedRetractSpeed,
-			extensionAtStart,
-			expectedDurationSeconds:
-				selectedRetractSpeed > 0
-					? extensionAtStart / selectedRetractSpeed
-					: Number.POSITIVE_INFINITY,
+
+		console.info("[PULL START]", {
+			creatureId: this.pullMeasure.creatureId ?? this.pullMeasure.itemId,
+			textureKey: this.pullMeasure.textureKey,
+			animationKey: this.pullMeasure.animationKey,
+			weight: this.pullMeasure.weight,
+			configuredRetractSpeed: this.pullMeasure.configuredRetractSpeed,
+			activeRetractSpeed: this.pullMeasure.effectiveRetractSpeed,
+			startExtension: this.pullMeasure.startExtension,
+			expectedDurationMs: this.pullMeasure.expectedDurationMs,
+			hookControllerInstanceId: this.instanceId,
+		});
+	}
+
+	private endPullMeasure(): void {
+		const session = this.pullMeasure;
+		this.pullMeasure = undefined;
+		if (!session || !DEBUG_PULL_SPEED) {
+			return;
+		}
+		console.info("[PULL END]", {
+			creatureId: session.creatureId ?? session.itemId,
+			actualDurationMs: this.scene.time.now - session.startedAt,
+			expectedDurationMs: session.expectedDurationMs,
+			frameCount: session.frameCount,
+			endExtension: this.extension,
+			activeRetractSpeed: this.activeRetractSpeed,
+			hookControllerInstanceId: this.instanceId,
 		});
 	}
 

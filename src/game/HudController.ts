@@ -18,6 +18,11 @@ const FONT_SIZE_MIN = 22;
 const STROKE_THICKNESS = 5;
 /** Shift number center toward the right of the panel (away from left icon). */
 const TEXT_CENTER_X_OFFSET_FRAC = 0.11;
+/** Nudge Score/Time numbers down relative to the panel center (panels stay put). */
+const TEXT_Y_OFFSET_PX = 8;
+const SCORE_TEXT_COLOR = "#FFD34E";
+const TIME_TEXT_COLOR = "#66E6FF";
+const TEXT_STROKE_COLOR = "#1a1208";
 /** Max fraction of panel width the number may occupy. */
 const TEXT_MAX_WIDTH_FRAC = 0.55;
 const DESIGN_WIDTH = 1280;
@@ -70,8 +75,8 @@ export class HudController {
 			.text(0, 0, "0", {
 				fontFamily: FONT_FAMILY,
 				fontSize: `${initialFontSize}px`,
-				color: "#ffffff",
-				stroke: "#1a1208",
+				color: SCORE_TEXT_COLOR,
+				stroke: TEXT_STROKE_COLOR,
 				strokeThickness: STROKE_THICKNESS,
 				align: "center",
 			})
@@ -84,8 +89,8 @@ export class HudController {
 			.text(0, 0, "100", {
 				fontFamily: FONT_FAMILY,
 				fontSize: `${initialFontSize}px`,
-				color: "#ffffff",
-				stroke: "#1a1208",
+				color: TIME_TEXT_COLOR,
+				stroke: TEXT_STROKE_COLOR,
 				strokeThickness: STROKE_THICKNESS,
 				align: "center",
 			})
@@ -162,7 +167,8 @@ export class HudController {
 	}
 
 	/**
-	 * Number origin 0.5/0.5 at panel center Y, shifted right by 11% of panel width.
+	 * Number origin 0.5/0.5 at panel center Y + TEXT_Y_OFFSET_PX,
+	 * shifted right by 11% of panel width (away from the icon).
 	 */
 	private positionTextOnPanel(
 		text: Phaser.GameObjects.Text,
@@ -172,7 +178,7 @@ export class HudController {
 		const centerY = panel.y + (0.5 - panel.originY) * panel.displayHeight;
 		text.setPosition(
 			centerX + panel.displayWidth * TEXT_CENTER_X_OFFSET_FRAC,
-			centerY,
+			centerY + TEXT_Y_OFFSET_PX,
 		);
 	}
 

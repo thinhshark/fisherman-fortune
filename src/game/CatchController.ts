@@ -12,12 +12,42 @@ import type {
 	ItemSpawner,
 } from "./ItemSpawner";
 import { type HookController } from "./HookController";
+import { getCreatureBalance } from "./config/CreatureBalance";
 
 /** Dev-only: stroke the hook collision circle and catchable bounds. */
 const SHOW_CATCH_DEBUG = false;
 
 /** Behind the hook Container (depth 20), above water (1) and swimming fish (5). */
 const CAUGHT_DEPTH = 15;
+
+/**
+ * Item catch rectangle from displayed bounds, optionally shrunk via hitSizeFrac
+ * (e.g. Pearl uses ~80% so the huge source PNG does not keep a giant hit box).
+ */
+function getItemCatchBounds(
+	object: ItemGameObject,
+): Phaser.Geom.Rectangle {
+	const bounds = object.getBounds();
+	const rawFrac = object.getData("hitSizeFrac");
+	const frac =
+		typeof rawFrac === "number" &&
+		Number.isFinite(rawFrac) &&
+		rawFrac > 0 &&
+		rawFrac < 1
+			? rawFrac
+			: 1;
+	if (frac >= 1) {
+		return bounds;
+	}
+	const w = bounds.width * frac;
+	const h = bounds.height * frac;
+	return new Phaser.Geom.Rectangle(
+		bounds.centerX - w * 0.5,
+		bounds.centerY - h * 0.5,
+		w,
+		h,
+	);
+}
 
 export const CREATURE_DELIVERED_EVENT = "creature-delivered";
 export const ITEM_DELIVERED_EVENT = "item-delivered";
@@ -192,7 +222,7 @@ export class CatchController {
 		}
 
 		for (const item of this.itemSpawner.getCatchableItems()) {
-			const bounds = item.object.getBounds();
+			const bounds = getItemCatchBounds(item.object);
 			if (
 				!Phaser.Geom.Intersects.CircleToRectangle(
 					this.hookCircle,
@@ -225,13 +255,51 @@ export class CatchController {
 			return;
 		}
 
-		const weight = best.definition.weight;
-		const retractSpeed = best.definition.retractSpeed;
+		// Snapshot stable metadata before the sprite is reparented/destroyed.
+		// creatureId comes from the definition, never from an animation frame key.
+		const catchData = {
+			creatureId: best.definition.id,
+			weight: best.definition.weight,
+			retractSpeed: best.definition.retractSpeed,
+		};
+
 		if (
-			!this.hook.beginRetractingWithCatch(retractSpeed, {
-				creatureId: best.definition.id,
+			typeof catchData.retractSpeed !== "number" ||
+			!Number.isFinite(catchData.retractSpeed) ||
+			catchData.retractSpeed <= 0
+		) {
+			if (import.meta.env.DEV) {
+				console.warn(
+					`[pullSpeed] Missing pull configuration for ${catchData.creatureId} ` +
+						`(category=${best.definition.category}, weight=${String(catchData.weight)}). ` +
+						`Refusing silent fallback.`,
+				);
+			}
+			this.creatureSpawner.destroyClaimedCreature(best.sprite);
+			return;
+		}
+
+		const animationKey = best.sprite.anims?.currentAnim?.key;
+
+		// Temporary remapping verification — remove after confirming shark/toxic IDs.
+		if (import.meta.env.DEV) {
+			const balance = getCreatureBalance(catchData.creatureId);
+			console.info("[catch-identity]", {
+				creatureId: catchData.creatureId,
+				animationKey,
+				weight: catchData.weight,
+				retractSpeed: catchData.retractSpeed,
+				rewardOperation: balance?.rewardOperation,
+			});
+		}
+
+		if (
+			!this.hook.beginRetractingWithCatch(catchData.retractSpeed, {
+				creatureId: catchData.creatureId,
 				category: best.definition.category,
-				weight,
+				weight: catchData.weight,
+				textureKey: best.sprite.texture.key,
+				animationKey,
 			})
 		) {
 			this.creatureSpawner.destroyClaimedCreature(best.sprite);
@@ -248,6 +316,11 @@ export class CatchController {
 	}
 
 	private catchItem(best: CatchableItem): void {
+		if (best.definition.rewardType === "bomb") {
+			this.detonateCaughtBarrel(best);
+			return;
+		}
+
 		if (!this.itemSpawner.claimItem(best)) {
 			return;
 		}
@@ -270,7 +343,14 @@ export class CatchController {
 		};
 		this.delivered = false;
 		best.object.setDepth(CAUGHT_DEPTH);
-		// Keep valuable (and any sprite) animation playing while attached.
+	}
+
+	private detonateCaughtBarrel(best: CatchableItem): void {
+		if (!this.itemSpawner.claimItem(best)) {
+			return;
+		}
+		this.itemSpawner.detonateBarrel(best, this.creatureSpawner);
+		this.hook.forceEmptyRetractIfCasting();
 	}
 
 	private attachCaught(): void {
@@ -388,7 +468,7 @@ export class CatchController {
 
 		graphics.lineStyle(1, 0xff88ff, 0.7);
 		for (const candidate of this.itemSpawner.getCatchableItems()) {
-			const bounds = candidate.object.getBounds();
+			const bounds = getItemCatchBounds(candidate.object);
 			graphics.strokeRect(
 				bounds.x,
 				bounds.y,
