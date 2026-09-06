@@ -13,6 +13,10 @@ import {
 	type ItemBalanceEntry,
 } from "./config/ItemBalance";
 import type { ItemEffectType } from "./ItemCatalog";
+import {
+	BARREL_EXPLODED_EVENT,
+	type BarrelExplodedPayload,
+} from "./ItemSpawner";
 
 export const SCORE_CHANGED_EVENT = "score-changed";
 export const TIME_CHANGED_EVENT = "time-changed";
@@ -82,6 +86,8 @@ export class GameSession {
 	private readonly boundCreatureDelivered =
 		this.handleCreatureDelivered.bind(this);
 	private readonly boundItemDelivered = this.handleItemDelivered.bind(this);
+	private readonly boundBarrelExploded =
+		this.handleBarrelExploded.bind(this);
 
 	private _score = 0;
 	private remainingMs = GameSession.DURATION_SECONDS * 1000;
@@ -99,6 +105,7 @@ export class GameSession {
 		this._gameSessionId = createGameSessionId();
 		scene.events.on(CREATURE_DELIVERED_EVENT, this.boundCreatureDelivered);
 		scene.events.on(ITEM_DELIVERED_EVENT, this.boundItemDelivered);
+		scene.events.on(BARREL_EXPLODED_EVENT, this.boundBarrelExploded);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
 	}
 
@@ -242,6 +249,7 @@ export class GameSession {
 			this.boundCreatureDelivered,
 		);
 		this.scene.events.off(ITEM_DELIVERED_EVENT, this.boundItemDelivered);
+		this.scene.events.off(BARREL_EXPLODED_EVENT, this.boundBarrelExploded);
 		this.scene.events.off(
 			Phaser.Scenes.Events.SHUTDOWN,
 			this.destroy,
@@ -347,6 +355,34 @@ export class GameSession {
 				);
 			}
 		}
+	}
+
+	/** Barrel detonates on catch (not delivery); apply score penalty here. */
+	private handleBarrelExploded(payload: BarrelExplodedPayload): void {
+		if (this.destroyed || this._state === "ready" || this._state === "finished") {
+			return;
+		}
+
+		const balance = getItemBalance(payload.sourceId);
+		if (!balance || balance.rewardType !== "bomb") {
+			return;
+		}
+
+		const delta = balance.scoreValue;
+		if (delta === 0) {
+			return;
+		}
+
+		this._score = Math.max(0, this._score + delta);
+		this.scene.events.emit(SCORE_CHANGED_EVENT, {
+			totalScore: this._score,
+			delta,
+			sourceKind: "item",
+			sourceId: payload.sourceId,
+			effectType: balance.effectType,
+			deliveryX: payload.x,
+			deliveryY: payload.y,
+		} satisfies ScoreChangedPayload);
 	}
 
 	private applyGiftReward(

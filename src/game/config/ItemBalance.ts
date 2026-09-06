@@ -454,13 +454,13 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		scale: SCALE_NATIVE,
 		rewardType: "bomb",
 		effectType: "bomb",
-		scoreValue: 0,
+		scoreValue: -500,
 		scoreMin: 0,
 		scoreMax: 0,
 		timeValue: 0,
 		timeMin: 0,
 		timeMax: 0,
-		spawnInterval: 30,
+		spawnInterval: 15,
 		maxSpawnsPerSession: 0,
 		explosionRadius: 200,
 		weight: "Light",
@@ -639,6 +639,12 @@ export function pickGiftOutcome(
 	}
 	if (barrel.explosionRadius !== 200) {
 		throw new Error("Barrel explosionRadius must be 200");
+	}
+	if (barrel.scoreValue !== -500) {
+		throw new Error("Barrel must deduct exactly 500 score on explode");
+	}
+	if (barrel.spawnInterval !== 15) {
+		throw new Error("Barrel spawnInterval must be 15 seconds");
 	}
 }
 

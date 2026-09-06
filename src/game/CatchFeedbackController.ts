@@ -26,7 +26,7 @@ const FADE_MS = 900;
 /** Floating money text: +300$ / -25$ (dollar after the number). */
 export function formatMoneyFeedback(delta: number): string {
 	const amount = Math.abs(delta);
-	return delta >= 0 ? `+${amount}$` : `-${amount}$`;
+	return delta >= 0 ? `+${amount}` : `-${amount}`;
 }
 
 /**
@@ -127,7 +127,7 @@ export class CatchFeedbackController {
 		}
 
 		this.spawnFeedback(
-			`+${payload.secondsAdded}s`,
+			`+${payload.secondsAdded}`,
 			TIME_COLOR,
 			payload.deliveryX,
 			payload.deliveryY,
