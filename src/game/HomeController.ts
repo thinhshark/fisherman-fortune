@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 import type { AudioController } from "./AudioController";
 import { FlutterGameBridge } from "./FlutterGameBridge";
-import { LeaderboardButton } from "./ui/LeaderboardButton";
 
 const OVERLAY_DEPTH = 1500;
 const CONTROL_DEPTH = 1510;
@@ -10,16 +9,15 @@ const SAFE_MARGIN = 28;
 const MIN_HIT = 72;
 const DESIGN_WIDTH = 1280;
 const DESIGN_HEIGHT = 720;
-/** Vertical rhythm (design 720): logo → Play → Sound|Music → Leaderboard. */
+/** Vertical rhythm: logo → Play → Sound | Music | Leaderboard. */
 const LOGO_Y = 125;
-const PLAY_Y = 290;
-const AUDIO_ROW_Y = 400;
-const LEADERBOARD_Y = 505;
-const AUDIO_GAP = 110;
-/** Uniform scale so 120px assets display ≥72px. */
-const AUDIO_SCALE = 0.72;
+const PLAY_Y = 330;
+const ROW_Y = 470;
+const ROW_GAP = 115;
+/** Uniform scale so square menu assets display ≥72px. */
+const ROW_SCALE = 0.72;
 const EXIT_SCALE = 0.55;
-const PLAY_SCALE = 1.15;
+const PLAY_SCALE = 1.2;
 const DISABLED_ALPHA = 0.45;
 
 export interface HomeControllerOptions {
@@ -28,7 +26,8 @@ export interface HomeControllerOptions {
 }
 
 /**
- * Ready-state Home: logo → Play → Sound|Music → Leaderboard; Exit top-right.
+ * Ready-state Home: logo → Play (start-game) → Sound | Music | Leaderboard;
+ * Exit (X) top-right. Score/Time HUD stays hidden while Home is visible.
  */
 export class HomeController {
 	private readonly scene: Phaser.Scene;
@@ -48,8 +47,8 @@ export class HomeController {
 	private playButton?: Phaser.GameObjects.Image;
 	private soundButton?: Phaser.GameObjects.Image;
 	private musicButton?: Phaser.GameObjects.Image;
+	private leaderboardButton?: Phaser.GameObjects.Image;
 	private exitButton?: Phaser.GameObjects.Image;
-	private leaderboardButton?: LeaderboardButton;
 
 	private destroyed = false;
 	private visible = true;
@@ -58,7 +57,6 @@ export class HomeController {
 	private leaderboardArmed = true;
 	private soundArmed = true;
 	private musicArmed = true;
-	private audioScale = AUDIO_SCALE;
 
 	constructor(scene: Phaser.Scene, options: HomeControllerOptions) {
 		this.scene = scene;
@@ -101,15 +99,15 @@ export class HomeController {
 	private requireTextures(): void {
 		const keys = [
 			"game-logo",
-			"play",
+			"start-game",
 			"sound-001",
 			"sound-002",
 			"music-001",
 			"music-002",
+			"leaderboard",
 			"exit-001",
 			"exit-002",
 			"black-screen",
-			"menu-001",
 		];
 		for (const key of keys) {
 			if (!this.scene.textures.exists(key)) {
@@ -143,7 +141,7 @@ export class HomeController {
 			.setName("homeLogo");
 
 		this.playButton = this.scene.add
-			.image(0, 0, "play")
+			.image(0, 0, "start-game")
 			.setOrigin(0.5, 0.5)
 			.setScale(PLAY_SCALE)
 			.setScrollFactor(0)
@@ -152,13 +150,12 @@ export class HomeController {
 			.setInteractive({ useHandCursor: true });
 		this.ensureMinHitArea(this.playButton);
 		this.bindPressVisual(this.playButton, () => PLAY_SCALE * this.uiScale());
-		// Single action handler — visual restore is pointerout/pointerup in bindPressVisual only.
 		this.playButton.on("pointerup", this.boundPlay);
 
 		this.soundButton = this.scene.add
 			.image(0, 0, "sound-002")
 			.setOrigin(0.5, 0.5)
-			.setScale(AUDIO_SCALE)
+			.setScale(ROW_SCALE)
 			.setScrollFactor(0)
 			.setDepth(CONTROL_DEPTH)
 			.setName("homeSound")
@@ -169,13 +166,28 @@ export class HomeController {
 		this.musicButton = this.scene.add
 			.image(0, 0, "music-002")
 			.setOrigin(0.5, 0.5)
-			.setScale(AUDIO_SCALE)
+			.setScale(ROW_SCALE)
 			.setScrollFactor(0)
 			.setDepth(CONTROL_DEPTH)
 			.setName("homeMusic")
 			.setInteractive({ useHandCursor: true });
 		this.ensureMinHitArea(this.musicButton);
 		this.musicButton.on("pointerup", this.boundMusic);
+
+		this.leaderboardButton = this.scene.add
+			.image(0, 0, "leaderboard")
+			.setOrigin(0.5, 0.5)
+			.setScale(ROW_SCALE)
+			.setScrollFactor(0)
+			.setDepth(CONTROL_DEPTH)
+			.setName("homeLeaderboard")
+			.setInteractive({ useHandCursor: true });
+		this.ensureMinHitArea(this.leaderboardButton);
+		this.bindPressVisual(
+			this.leaderboardButton,
+			() => ROW_SCALE * this.uiScale(),
+		);
+		this.leaderboardButton.on("pointerup", this.boundLeaderboard);
 
 		this.exitButton = this.scene.add
 			.image(0, 0, "exit-001")
@@ -200,14 +212,6 @@ export class HomeController {
 			}
 		});
 		this.exitButton.on("pointerup", this.boundExit);
-
-		this.leaderboardButton = new LeaderboardButton({
-			scene: this.scene,
-			depth: CONTROL_DEPTH,
-			namePrefix: "homeLeaderboard",
-			onActivate: this.boundLeaderboard,
-			scale: this.uiScale(),
-		});
 	}
 
 	private uiScale(): number {
@@ -232,7 +236,6 @@ export class HomeController {
 			button.setScale(baseScale() * 0.9);
 			button.setTint(0xffd070);
 		});
-		// Do not attach pointerup here — action owns pointerup exclusively.
 	}
 
 	private ensureMinHitArea(button: Phaser.GameObjects.Image): void {
@@ -275,24 +278,21 @@ export class HomeController {
 			this.ensureMinHitArea(this.playButton);
 		}
 
-		this.audioScale = Math.max(AUDIO_SCALE * ui, MIN_HIT / 120);
-		const audioY = AUDIO_ROW_Y * scaleY;
-		const gap = AUDIO_GAP * ui;
-		this.soundButton
-			?.setScale(this.audioScale)
-			.setPosition(cx - gap, audioY);
-		this.musicButton
-			?.setScale(this.audioScale)
-			.setPosition(cx + gap, audioY);
-		if (this.soundButton) {
-			this.ensureMinHitArea(this.soundButton);
+		const rowScale = Math.max(ROW_SCALE * ui, MIN_HIT / 120);
+		const rowY = ROW_Y * scaleY;
+		const gap = ROW_GAP * ui;
+		const rowButtons = [
+			this.soundButton,
+			this.musicButton,
+			this.leaderboardButton,
+		];
+		for (let i = 0; i < rowButtons.length; i++) {
+			const button = rowButtons[i];
+			button?.setScale(rowScale).setPosition(cx + (i - 1) * gap, rowY);
+			if (button) {
+				this.ensureMinHitArea(button);
+			}
 		}
-		if (this.musicButton) {
-			this.ensureMinHitArea(this.musicButton);
-		}
-
-		this.leaderboardButton?.setBaseScale(ui);
-		this.leaderboardButton?.setPosition(cx, LEADERBOARD_Y * scaleY);
 
 		this.exitButton
 			?.setScale(EXIT_SCALE * ui)
@@ -343,8 +343,8 @@ export class HomeController {
 		this.playButton?.disableInteractive();
 		this.soundButton?.disableInteractive();
 		this.musicButton?.disableInteractive();
+		this.leaderboardButton?.disableInteractive();
 		this.exitButton?.disableInteractive();
-		this.leaderboardButton?.setArmed(false);
 	}
 
 	private handlePlay(): void {
@@ -402,13 +402,17 @@ export class HomeController {
 			return;
 		}
 		this.leaderboardArmed = false;
-		this.leaderboardButton?.setArmed(false);
+		this.leaderboardButton?.disableInteractive();
+		this.leaderboardButton?.clearTint();
 		this.audio.playButtonSfx();
 		FlutterGameBridge.sendOpenLeaderboard();
 		this.scene.time.delayedCall(400, () => {
 			if (!this.destroyed && this.visible) {
 				this.leaderboardArmed = true;
-				this.leaderboardButton?.setArmed(true);
+				this.leaderboardButton?.setInteractive();
+				if (this.leaderboardButton) {
+					this.ensureMinHitArea(this.leaderboardButton);
+				}
 			}
 		});
 	}
@@ -437,21 +441,22 @@ export class HomeController {
 		this.playButton?.off("pointerup", this.boundPlay);
 		this.soundButton?.off("pointerup", this.boundSound);
 		this.musicButton?.off("pointerup", this.boundMusic);
+		this.leaderboardButton?.off("pointerup", this.boundLeaderboard);
 		this.exitButton?.off("pointerup", this.boundExit);
 
-		this.leaderboardButton?.destroy();
 		this.playButton?.destroy();
 		this.soundButton?.destroy();
 		this.musicButton?.destroy();
+		this.leaderboardButton?.destroy();
 		this.exitButton?.destroy();
 		this.logo?.destroy();
 		this.blocker?.destroy();
 		this.overlay?.destroy();
 
-		this.leaderboardButton = undefined;
 		this.playButton = undefined;
 		this.soundButton = undefined;
 		this.musicButton = undefined;
+		this.leaderboardButton = undefined;
 		this.exitButton = undefined;
 		this.logo = undefined;
 		this.blocker = undefined;

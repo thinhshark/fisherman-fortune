@@ -11,21 +11,20 @@ const OVERLAY_ALPHA = 0.72;
 const DISABLED_ALPHA = 0.45;
 const DESIGN_WIDTH = 1280;
 const DESIGN_HEIGHT = 720;
-const PAUSE_BUTTON_Y = 42;
+const PAUSE_BUTTON_Y = 50;
 const PAUSE_BUTTON_SCALE = 0.55;
 const TITLE_SCALE = 0.55;
-/** Continue is the primary wide pill; Replay/Home are secondary squares. */
+/** Wide orange Continue pill (play triangle). */
 const CONTINUE_SCALE = 0.92;
-const ACTION_SCALE = 0.9;
-const TOGGLE_SCALE = 0.7;
+/** Shared scale for Sound | Music | Restart | Home row. */
+const ROW_SCALE = 0.72;
 const MIN_HIT = 72;
 /** Design-space offsets from screen center (scaled by ui). */
-const TITLE_OFFSET_Y = -175;
-const CONTINUE_OFFSET_Y = -25;
-const SECONDARY_OFFSET_Y = 95;
-const SECONDARY_GAP = 120;
-const AUDIO_OFFSET_Y = 210;
-const AUDIO_GAP = 100;
+const TITLE_OFFSET_Y = -165;
+const CONTINUE_OFFSET_Y = -15;
+const ROW_OFFSET_Y = 125;
+/** Horizontal spacing between the four square action buttons. */
+const ROW_GAP = 115;
 
 export interface PauseControllerOptions {
 	canPause: () => boolean;
@@ -37,11 +36,13 @@ export interface PauseControllerOptions {
 }
 
 /**
- * In-game pause: Continue (primary) → Replay | Home → Sound | Music.
+ * In-game pause: Continue → Sound | Music | Restart | Home.
  *
- * Textures (visual inspection):
- * - Replay → restart-001 / restart-002 (circular arrows)
- * - Home → return-001 / return-002 (back arrow; menu-001 is the list/leaderboard glyph)
+ * Textures:
+ * - Continue → continue-001 / continue-002 (orange play pill)
+ * - Home → home
+ * - Restart → restart-002
+ * - HUD pause → pause-002
  */
 export class PauseController {
 	private readonly scene: Phaser.Scene;
@@ -205,8 +206,7 @@ export class PauseController {
 			"continue-002",
 			"restart-001",
 			"restart-002",
-			"return-001",
-			"return-002",
+			"home",
 			"sound-001",
 			"sound-002",
 			"music-001",
@@ -223,7 +223,7 @@ export class PauseController {
 
 	private buildPauseButton(): void {
 		this.pauseButton = this.scene.add
-			.image(0, 0, "pause-001")
+			.image(0, 0, "pause-002")
 			.setOrigin(0.5, 0.5)
 			.setScale(PAUSE_BUTTON_SCALE)
 			.setScrollFactor(0)
@@ -234,13 +234,14 @@ export class PauseController {
 		this.ensureMinHitArea(this.pauseButton);
 
 		this.pauseButton.on("pointerover", () => {
-			this.pauseButton?.setTexture("pause-002");
+			this.pauseButton?.setTint(0xbbbbbb);
 		});
 		this.pauseButton.on("pointerout", () => {
-			this.pauseButton?.setTexture("pause-001");
+			this.pauseButton?.clearTint();
+			this.pauseButton?.setTexture("pause-002");
 		});
 		this.pauseButton.on("pointerdown", () => {
-			this.pauseButton?.setTexture("pause-002");
+			this.pauseButton?.setTint(0x999999);
 		});
 		this.pauseButton.on("pointerup", this.boundPauseButton);
 	}
@@ -285,20 +286,6 @@ export class PauseController {
 			CONTINUE_SCALE,
 			this.boundContinue,
 		);
-		this.replayButton = this.createActionButton(
-			"restart-001",
-			"restart-002",
-			"pauseReplay",
-			ACTION_SCALE,
-			this.boundReplay,
-		);
-		this.homeButton = this.createActionButton(
-			"return-001",
-			"return-002",
-			"pauseHome",
-			ACTION_SCALE,
-			this.boundHome,
-		);
 		this.soundButton = this.createStateToggleButton(
 			"pauseSound",
 			this.boundSound,
@@ -306,6 +293,20 @@ export class PauseController {
 		this.musicButton = this.createStateToggleButton(
 			"pauseMusic",
 			this.boundMusic,
+		);
+		this.replayButton = this.createActionButton(
+			"restart-002",
+			"restart-002",
+			"pauseReplay",
+			ROW_SCALE,
+			this.boundReplay,
+		);
+		this.homeButton = this.createActionButton(
+			"home",
+			"home",
+			"pauseHome",
+			ROW_SCALE,
+			this.boundHome,
 		);
 
 		this.refreshToggleAppearance();
@@ -318,7 +319,7 @@ export class PauseController {
 		const button = this.scene.add
 			.image(0, 0, "sound-002")
 			.setOrigin(0.5, 0.5)
-			.setScale(TOGGLE_SCALE)
+			.setScale(ROW_SCALE)
 			.setScrollFactor(0)
 			.setDepth(OVERLAY_DEPTH + 3)
 			.setName(name)
@@ -348,18 +349,28 @@ export class PauseController {
 
 		this.ensureMinHitArea(button);
 
+		const hasPressedTexture = defaultKey !== pressedKey;
 		button.on("pointerover", () => {
-			if (button.visible) {
+			if (button.visible && hasPressedTexture) {
 				button.setTexture(pressedKey);
 			}
 		});
 		button.on("pointerout", () => {
 			button.setTexture(defaultKey);
+			button.clearTint();
 		});
 		button.on("pointerdown", () => {
-			if (button.visible) {
-				button.setTexture(pressedKey);
+			if (!button.visible) {
+				return;
 			}
+			if (hasPressedTexture) {
+				button.setTexture(pressedKey);
+			} else {
+				button.setTint(0xbbbbbb);
+			}
+		});
+		button.on("pointerup", () => {
+			button.clearTint();
 		});
 		button.on("pointerup", onUp);
 
@@ -394,8 +405,8 @@ export class PauseController {
 		this._isVisible = false;
 		this.setOverlayVisible(false);
 		this.continueButton?.setTexture("continue-001");
-		this.replayButton?.setTexture("restart-001");
-		this.homeButton?.setTexture("return-001");
+		this.replayButton?.setTexture("restart-002");
+		this.homeButton?.setTexture("home");
 		this.refreshToggleAppearance();
 	}
 
@@ -445,7 +456,8 @@ export class PauseController {
 		this.pauseButton.setVisible(visible);
 		if (visible && this.pauseAllowed) {
 			this.pauseButton.setInteractive();
-			this.pauseButton.setTexture("pause-001");
+			this.pauseButton.setTexture("pause-002");
+			this.pauseButton.clearTint();
 		} else {
 			this.pauseButton.disableInteractive();
 		}
@@ -480,22 +492,26 @@ export class PauseController {
 			?.setScale(TITLE_SCALE * ui)
 			.setPosition(cx, cy + TITLE_OFFSET_Y * ui);
 
-		// Primary: Continue centered. Secondary: Replay | Home. Then Sound | Music.
+		// Primary Continue, then Sound | Music | Restart | Home.
 		this.continueButton
 			?.setScale(CONTINUE_SCALE * ui)
 			.setPosition(cx, cy + CONTINUE_OFFSET_Y * ui);
-		this.replayButton
-			?.setScale(ACTION_SCALE * ui)
-			.setPosition(cx - SECONDARY_GAP * ui, cy + SECONDARY_OFFSET_Y * ui);
-		this.homeButton
-			?.setScale(ACTION_SCALE * ui)
-			.setPosition(cx + SECONDARY_GAP * ui, cy + SECONDARY_OFFSET_Y * ui);
-		this.soundButton
-			?.setScale(TOGGLE_SCALE * ui)
-			.setPosition(cx - AUDIO_GAP * ui, cy + AUDIO_OFFSET_Y * ui);
-		this.musicButton
-			?.setScale(TOGGLE_SCALE * ui)
-			.setPosition(cx + AUDIO_GAP * ui, cy + AUDIO_OFFSET_Y * ui);
+
+		const rowY = cy + ROW_OFFSET_Y * ui;
+		const rowScale = ROW_SCALE * ui;
+		const gap = ROW_GAP * ui;
+		const rowButtons = [
+			this.soundButton,
+			this.musicButton,
+			this.replayButton,
+			this.homeButton,
+		];
+		const mid = (rowButtons.length - 1) * 0.5;
+		for (let i = 0; i < rowButtons.length; i++) {
+			rowButtons[i]
+				?.setScale(rowScale)
+				.setPosition(cx + (i - mid) * gap, rowY);
+		}
 
 		this.refreshHitAreas();
 	}
@@ -558,7 +574,8 @@ export class PauseController {
 		if (this.destroyed || !this.pauseAllowed || this._isPaused) {
 			return;
 		}
-		this.pauseButton?.setTexture("pause-001");
+		this.pauseButton?.setTexture("pause-002");
+		this.pauseButton?.clearTint();
 		this.pause();
 	}
 

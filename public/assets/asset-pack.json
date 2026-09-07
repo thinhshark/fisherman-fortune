@@ -2412,6 +2412,16 @@
                 "key": "game-logo"
             },
             {
+                "url": "assets/images/ui/menu/home.png",
+                "type": "image",
+                "key": "home"
+            },
+            {
+                "url": "assets/images/ui/menu/leaderboard.png",
+                "type": "image",
+                "key": "leaderboard"
+            },
+            {
                 "url": "assets/images/ui/menu/menu-001.png",
                 "type": "image",
                 "key": "menu-001"
@@ -2445,6 +2455,11 @@
                 "url": "assets/images/ui/menu/play.png",
                 "type": "image",
                 "key": "play"
+            },
+            {
+                "url": "assets/images/ui/menu/start-game.png",
+                "type": "image",
+                "key": "start-game"
             },
             {
                 "url": "assets/images/ui/menu/restart-001.png",

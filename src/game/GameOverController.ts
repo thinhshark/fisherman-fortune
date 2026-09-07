@@ -7,29 +7,26 @@ import {
 import type { AudioController } from "./AudioController";
 import { FlutterGameBridge } from "./FlutterGameBridge";
 import { ScoreStorage } from "./ScoreStorage";
-import { LeaderboardButton } from "./ui/LeaderboardButton";
 
 const OVERLAY_DEPTH = 2000;
 const OVERLAY_ALPHA = 0.72;
 const DESIGN_WIDTH = 1280;
 const DESIGN_HEIGHT = 720;
-const TITLE_SCALE = 0.52;
-const RESTART_SCALE = 1.08;
-const HOME_SCALE = 0.9;
-const SCORE_LABEL_PX = 26;
-const SCORE_BASE_PX = 56;
-const SCORE_MIN_PX = 28;
+const TITLE_SCALE = 0.55;
+/** Shared scale for Restart | Home | Leaderboard. */
+const ROW_SCALE = 0.78;
+const SCORE_BASE_PX = 72;
+const SCORE_MIN_PX = 32;
 const SCORE_MAX_WIDTH_FRAC = 0.55;
-const MIN_HIT = 56;
+const MIN_HIT = 72;
 const FONT_FAMILY = "Luckiest Guy";
 const DISABLED_ALPHA = 0.55;
 /** Design-space Y offsets from center (scaled by ui). */
-const TITLE_OFFSET_Y = -205;
-const SCORE_LABEL_OFFSET_Y = -125;
-const SCORE_OFFSET_Y = -60;
-const PLAY_AGAIN_OFFSET_Y = 35;
-const LEADERBOARD_OFFSET_Y = 145;
-const HOME_OFFSET_Y = 250;
+const TITLE_OFFSET_Y = -145;
+const SCORE_OFFSET_Y = -25;
+const ROW_OFFSET_Y = 130;
+/** Horizontal spacing between the three square action buttons. */
+const ROW_GAP = 130;
 
 export interface GameOverControllerOptions {
 	audio?: AudioController;
@@ -38,7 +35,7 @@ export interface GameOverControllerOptions {
 }
 
 /**
- * End-of-round Result overlay.
+ * End-of-round Result: YOUR SCORE → value → Restart | Home | Leaderboard.
  * Submits score once via FlutterGameBridge; Flutter owns the real leaderboard.
  */
 export class GameOverController {
@@ -56,11 +53,10 @@ export class GameOverController {
 	private overlay?: Phaser.GameObjects.Image;
 	private blocker?: Phaser.GameObjects.Rectangle;
 	private title?: Phaser.GameObjects.Image;
-	private scoreLabel?: Phaser.GameObjects.Text;
 	private scoreText?: Phaser.GameObjects.Text;
 	private playAgainButton?: Phaser.GameObjects.Image;
 	private homeButton?: Phaser.GameObjects.Image;
-	private leaderboardButton?: LeaderboardButton;
+	private leaderboardButton?: Phaser.GameObjects.Image;
 
 	private destroyed = false;
 	private visible = false;
@@ -168,25 +164,11 @@ export class GameOverController {
 			.setDepth(OVERLAY_DEPTH + 2)
 			.setName("resultTitle");
 
-		this.scoreLabel = this.scene.add
-			.text(0, 0, "SCORE", {
-				fontFamily: FONT_FAMILY,
-				fontSize: `${SCORE_LABEL_PX}px`,
-				color: "#d9c4a0",
-				stroke: "#2a1608",
-				strokeThickness: 5,
-				align: "center",
-			})
-			.setOrigin(0.5, 0.5)
-			.setScrollFactor(0)
-			.setDepth(OVERLAY_DEPTH + 3)
-			.setName("resultScoreLabel");
-
 		this.scoreText = this.scene.add
 			.text(0, 0, String(Math.max(0, Math.floor(this.finalScore))), {
 				fontFamily: FONT_FAMILY,
 				fontSize: `${SCORE_BASE_PX}px`,
-				color: "#ffe36e",
+				color: "#f5ead0",
 				stroke: "#2a1608",
 				strokeThickness: 8,
 				align: "center",
@@ -196,40 +178,24 @@ export class GameOverController {
 			.setDepth(OVERLAY_DEPTH + 3)
 			.setName("resultScore");
 
-		this.playAgainButton = this.scene.add
-			.image(0, 0, "restart-001")
-			.setOrigin(0.5, 0.5)
-			.setScale(RESTART_SCALE)
-			.setScrollFactor(0)
-			.setDepth(OVERLAY_DEPTH + 4)
-			.setName("resultPlayAgain")
-			.setInteractive({ useHandCursor: true });
-		this.ensureMinHitArea(this.playAgainButton, RESTART_SCALE);
-		this.bindPressVisual(
-			this.playAgainButton,
-			"restart-001",
+		this.playAgainButton = this.createActionButton(
 			"restart-002",
+			"restart-002",
+			"resultPlayAgain",
+			this.boundPlayAgain,
 		);
-		this.playAgainButton.on("pointerup", this.boundPlayAgain);
-
-		this.leaderboardButton = new LeaderboardButton({
-			scene: this.scene,
-			depth: OVERLAY_DEPTH + 4,
-			namePrefix: "resultLeaderboard",
-			onActivate: this.boundLeaderboard,
-		});
-
-		this.homeButton = this.scene.add
-			.image(0, 0, "menu-001")
-			.setOrigin(0.5, 0.5)
-			.setScale(HOME_SCALE)
-			.setScrollFactor(0)
-			.setDepth(OVERLAY_DEPTH + 4)
-			.setName("resultHome")
-			.setInteractive({ useHandCursor: true });
-		this.ensureMinHitArea(this.homeButton, HOME_SCALE);
-		this.bindPressVisual(this.homeButton, "menu-001", "menu-002");
-		this.homeButton.on("pointerup", this.boundHome);
+		this.homeButton = this.createActionButton(
+			"home",
+			"home",
+			"resultHome",
+			this.boundHome,
+		);
+		this.leaderboardButton = this.createActionButton(
+			"leaderboard",
+			"leaderboard",
+			"resultLeaderboard",
+			this.boundLeaderboard,
+		);
 	}
 
 	private requireTextures(): void {
@@ -238,8 +204,8 @@ export class GameOverController {
 			"text-your-score",
 			"restart-001",
 			"restart-002",
-			"menu-001",
-			"menu-002",
+			"home",
+			"leaderboard",
 		];
 		for (const key of keys) {
 			if (!this.scene.textures.exists(key)) {
@@ -248,23 +214,54 @@ export class GameOverController {
 		}
 	}
 
+	private createActionButton(
+		idleKey: string,
+		pressedKey: string,
+		name: string,
+		onUp: () => void,
+	): Phaser.GameObjects.Image {
+		const button = this.scene.add
+			.image(0, 0, idleKey)
+			.setOrigin(0.5, 0.5)
+			.setScale(ROW_SCALE)
+			.setScrollFactor(0)
+			.setDepth(OVERLAY_DEPTH + 4)
+			.setName(name)
+			.setInteractive({ useHandCursor: true });
+
+		this.ensureMinHitArea(button);
+		this.bindPressVisual(button, idleKey, pressedKey);
+		button.on("pointerup", onUp);
+		return button;
+	}
+
 	private bindPressVisual(
 		button: Phaser.GameObjects.Image,
 		idleKey: string,
 		pressedKey: string,
 	): void {
+		const hasPressedTexture = idleKey !== pressedKey;
 		button.on("pointerover", () => {
-			if (this.actionsArmed && button.visible) {
+			if (this.actionsArmed && button.visible && hasPressedTexture) {
 				button.setTexture(pressedKey);
 			}
 		});
 		button.on("pointerout", () => {
 			button.setTexture(idleKey);
+			button.clearTint();
 		});
 		button.on("pointerdown", () => {
-			if (this.actionsArmed && button.visible) {
-				button.setTexture(pressedKey);
+			if (!this.actionsArmed || !button.visible) {
+				return;
 			}
+			if (hasPressedTexture) {
+				button.setTexture(pressedKey);
+			} else {
+				button.setTint(0xbbbbbb);
+			}
+		});
+		button.on("pointerup", () => {
+			button.clearTint();
 		});
 	}
 
@@ -286,10 +283,6 @@ export class GameOverController {
 			?.setScale(TITLE_SCALE * ui)
 			.setPosition(cx, cy + TITLE_OFFSET_Y * ui);
 
-		this.scoreLabel
-			?.setFontSize(Math.round(SCORE_LABEL_PX * ui))
-			.setPosition(cx, cy + SCORE_LABEL_OFFSET_Y * ui);
-
 		if (this.scoreText) {
 			this.scoreText.setText(
 				String(Math.max(0, Math.floor(this.finalScore))),
@@ -297,31 +290,25 @@ export class GameOverController {
 			this.fitScoreText(
 				this.scoreText,
 				Math.round(SCORE_BASE_PX * ui),
-				Math.min(w * SCORE_MAX_WIDTH_FRAC, 420 * ui),
+				Math.min(w * SCORE_MAX_WIDTH_FRAC, 480 * ui),
 			);
 			this.scoreText.setPosition(cx, cy + SCORE_OFFSET_Y * ui);
 		}
 
-		const playScale = RESTART_SCALE * ui;
-		this.playAgainButton
-			?.setScale(playScale)
-			.setPosition(cx, cy + PLAY_AGAIN_OFFSET_Y * ui);
-		if (this.playAgainButton) {
-			this.ensureMinHitArea(this.playAgainButton, playScale);
-		}
-
-		this.leaderboardButton?.setBaseScale(ui);
-		this.leaderboardButton?.setPosition(
-			cx,
-			cy + LEADERBOARD_OFFSET_Y * ui,
-		);
-
-		const homeScale = HOME_SCALE * ui;
-		this.homeButton
-			?.setScale(homeScale)
-			.setPosition(cx, cy + HOME_OFFSET_Y * ui);
-		if (this.homeButton) {
-			this.ensureMinHitArea(this.homeButton, homeScale);
+		const rowY = cy + ROW_OFFSET_Y * ui;
+		const rowScale = ROW_SCALE * ui;
+		const gap = ROW_GAP * ui;
+		const rowButtons = [
+			this.playAgainButton,
+			this.homeButton,
+			this.leaderboardButton,
+		];
+		for (let i = 0; i < rowButtons.length; i++) {
+			const button = rowButtons[i];
+			button?.setScale(rowScale).setPosition(cx + (i - 1) * gap, rowY);
+			if (button) {
+				this.ensureMinHitArea(button);
+			}
 		}
 	}
 
@@ -338,16 +325,16 @@ export class GameOverController {
 		}
 	}
 
-	private ensureMinHitArea(
-		button: Phaser.GameObjects.Image,
-		_scale: number,
-	): void {
+	private ensureMinHitArea(button: Phaser.GameObjects.Image): void {
 		const w = Math.max(button.displayWidth, MIN_HIT);
 		const h = Math.max(button.displayHeight, MIN_HIT);
 		button.setInteractive(
 			new Phaser.Geom.Rectangle(-w * 0.5, -h * 0.5, w, h),
 			Phaser.Geom.Rectangle.Contains,
 		);
+		if (button.input) {
+			button.input.cursor = "pointer";
+		}
 	}
 
 	private disableAllActions(): void {
@@ -355,9 +342,10 @@ export class GameOverController {
 		this.leaderboardArmed = false;
 		this.playAgainButton?.disableInteractive();
 		this.homeButton?.disableInteractive();
-		this.leaderboardButton?.setArmed(false);
+		this.leaderboardButton?.disableInteractive();
 		this.playAgainButton?.setAlpha(DISABLED_ALPHA);
 		this.homeButton?.setAlpha(DISABLED_ALPHA);
+		this.leaderboardButton?.setAlpha(DISABLED_ALPHA);
 	}
 
 	private handlePlayAgain(): void {
@@ -386,13 +374,16 @@ export class GameOverController {
 			return;
 		}
 		this.leaderboardArmed = false;
-		this.leaderboardButton?.setArmed(false);
+		this.leaderboardButton?.disableInteractive();
 		this.audio?.playButtonSfx();
 		FlutterGameBridge.sendOpenLeaderboard();
 		this.scene.time.delayedCall(400, () => {
 			if (!this.destroyed && this.visible && this.actionsArmed) {
 				this.leaderboardArmed = true;
-				this.leaderboardButton?.setArmed(true);
+				this.leaderboardButton?.setInteractive();
+				if (this.leaderboardButton) {
+					this.ensureMinHitArea(this.leaderboardButton);
+				}
 			}
 		});
 	}
@@ -411,12 +402,12 @@ export class GameOverController {
 	private teardownUi(): void {
 		this.playAgainButton?.off("pointerup", this.boundPlayAgain);
 		this.homeButton?.off("pointerup", this.boundHome);
+		this.leaderboardButton?.off("pointerup", this.boundLeaderboard);
 
 		this.leaderboardButton?.destroy();
 		this.homeButton?.destroy();
 		this.playAgainButton?.destroy();
 		this.scoreText?.destroy();
-		this.scoreLabel?.destroy();
 		this.title?.destroy();
 		this.blocker?.destroy();
 		this.overlay?.destroy();
@@ -425,7 +416,6 @@ export class GameOverController {
 		this.homeButton = undefined;
 		this.playAgainButton = undefined;
 		this.scoreText = undefined;
-		this.scoreLabel = undefined;
 		this.title = undefined;
 		this.blocker = undefined;
 		this.overlay = undefined;

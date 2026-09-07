@@ -144,7 +144,7 @@ export default class Level extends Phaser.Scene {
 		this.exposePullDebugBridge();
 		this.catchFeedbackController = new CatchFeedbackController(this);
 		this.hudController = new HudController(this);
-		this.hudController.setVisible(true);
+		this.hudController.setVisible(false);
 		this.audioController = new AudioController(this);
 		this.gameOverController = new GameOverController(this, {
 			audio: this.audioController,
