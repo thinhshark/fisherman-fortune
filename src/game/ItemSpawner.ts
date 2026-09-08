@@ -46,6 +46,7 @@ const DEBUG_ITEM_SPAWN = false;
 export class ItemSpawner {
 	static readonly TARGET_ACTIVE = 5;
 	static readonly EXPLOSION_ANIM_KEY = "explosion-barrel";
+	static readonly WATER_EFFECT_ANIM_KEY = "water-effect";
 	private static readonly EDGE_PADDING_PX = 55;
 	private static readonly BELOW_WATER_PX = 45;
 	private static readonly ABOVE_SEABED_PX = 55;
@@ -527,14 +528,17 @@ export class ItemSpawner {
 		}
 		if (
 			!options?.ignoreActiveCap &&
+			!definition.allowMultipleActive &&
 			this.active.size >= ItemSpawner.TARGET_ACTIVE
 		) {
 			return undefined;
 		}
+		const allowConcurrent = definition.allowMultipleActive;
 		if (
 			!this.registry.canSpawn(
 				definition.id,
 				definition.maxSpawnsPerSession,
+				allowConcurrent,
 			)
 		) {
 			return undefined;
@@ -591,7 +595,10 @@ export class ItemSpawner {
 			}
 		}
 
-		const typeToken = this.registry.acquire(definition.id);
+		const typeToken = this.registry.acquire(
+			definition.id,
+			allowConcurrent,
+		);
 		if (typeToken === undefined) {
 			object.destroy();
 			return undefined;
@@ -611,22 +618,47 @@ export class ItemSpawner {
 	private playSpawnEntrance(entry: ActiveItem): void {
 		const key = entry.object.name;
 		this.spawnEffects.get(key)?.destroy();
-		const effect = new ItemSpawnEffect(
-			this.scene,
-			entry.object,
-			Number(entry.object.getData("baseScale")) || entry.definition.scale,
-			entry.object.y,
-			() => {
-				if (this.destroyed || !this.active.has(key)) {
-					return;
-				}
-				this.startIdleMotion(entry);
-			},
-		);
-		this.spawnEffects.set(key, effect);
-		if (this.paused) {
-			effect.setPaused(true);
+
+		const startEntrance = (): void => {
+			if (this.destroyed || !this.active.has(key)) {
+				return;
+			}
+			const effect = new ItemSpawnEffect(
+				this.scene,
+				entry.object,
+				Number(entry.object.getData("baseScale")) ||
+					entry.definition.scale,
+				entry.object.y,
+				() => {
+					if (this.destroyed || !this.active.has(key)) {
+						return;
+					}
+					this.startIdleMotion(entry);
+				},
+			);
+			this.spawnEffects.set(key, effect);
+			if (this.paused) {
+				effect.setPaused(true);
+			}
+		};
+
+		// Barrel: splash first (item hidden), then pop in.
+		if (entry.definition.id === "barrel") {
+			entry.object.setAlpha(0);
+			entry.object.setData("spawnCatchable", false);
+			entry.object.setData("spawnEntranceActive", true);
+			const played = this.playWaterEffect(
+				entry.object.x,
+				entry.object.y,
+				startEntrance,
+			);
+			if (!played) {
+				startEntrance();
+			}
+			return;
 		}
+
+		startEntrance();
 	}
 
 	private startIdleMotion(entry: ActiveItem): void {
@@ -648,6 +680,36 @@ export class ItemSpawner {
 		object.setData("idleBaseAngle", baseAngle);
 
 		const cfg = ITEM_IDLE_MOTION;
+		const delay = Phaser.Math.Between(0, cfg.initialDelayMaxMs);
+
+		// Barrel: random horizontal or vertical patrol (±amplitude).
+		if (entry.definition.id === "barrel") {
+			const amplitude = cfg.barrelPatrolAmplitudePx;
+			const duration = Phaser.Math.Between(
+				cfg.barrelPatrolDurationMinMs,
+				cfg.barrelPatrolDurationMaxMs,
+			);
+			const sign = Math.random() < 0.5 ? -1 : 1;
+			const horizontal = Math.random() < 0.5;
+			const tween = this.scene.tweens.add({
+				targets: object,
+				...(horizontal
+					? { x: baseX + sign * amplitude }
+					: { y: baseY + sign * amplitude }),
+				duration,
+				delay,
+				ease: "Sine.easeInOut",
+				yoyo: true,
+				repeat: -1,
+			});
+			this.idleTweens.set(key, tween);
+			if (this.paused) {
+				tween.pause();
+			}
+			object.setScale(baseScale);
+			return;
+		}
+
 		const amplitudeY = Phaser.Math.FloatBetween(
 			cfg.bobMinPixels,
 			cfg.bobMaxPixels,
@@ -660,7 +722,6 @@ export class ItemSpawner {
 			cfg.durationMinMs,
 			cfg.durationMaxMs,
 		);
-		const delay = Phaser.Math.Between(0, cfg.initialDelayMaxMs);
 		// Vary starting direction so items are not phase-locked.
 		const ySign = Math.random() < 0.5 ? -1 : 1;
 		const angleSign = Math.random() < 0.5 ? -1 : 1;
@@ -818,6 +879,43 @@ export class ItemSpawner {
 		if (this.paused) {
 			sprite.anims.pause();
 		}
+	}
+
+	/**
+	 * One-shot splash. Returns false if the anim/texture is missing.
+	 * `onComplete` runs after the splash finishes (or immediately if missing).
+	 */
+	private playWaterEffect(
+		x: number,
+		y: number,
+		onComplete?: () => void,
+	): boolean {
+		if (!this.scene.anims.exists(ItemSpawner.WATER_EFFECT_ANIM_KEY)) {
+			return false;
+		}
+		if (!this.scene.textures.exists("water-effect-001")) {
+			return false;
+		}
+		const sprite = this.scene.add.sprite(x, y, "water-effect-001");
+		sprite.setDepth(ItemSpawner.ITEM_DEPTH + 1);
+		sprite.setName(`water-effect-${this.nextNameIndex}`);
+		this.nextNameIndex += 1;
+		this.explosionSprites.add(sprite);
+
+		const finish = (): void => {
+			this.explosionSprites.delete(sprite);
+			if (sprite.active) {
+				sprite.destroy();
+			}
+			onComplete?.();
+		};
+
+		sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, finish);
+		sprite.play(ItemSpawner.WATER_EFFECT_ANIM_KEY);
+		if (this.paused) {
+			sprite.anims.pause();
+		}
+		return true;
 	}
 
 	private setItemAnimsPaused(paused: boolean): void {

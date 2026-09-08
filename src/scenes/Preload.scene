@@ -18,12 +18,12 @@
             "id": "e413cbbf-ce25-4dad-a117-b7cf0791f655",
             "label": "guapen",
             "texture": {
-                "key": "guapen"
+                "key": "logo"
             },
             "x": 505.0120544433594,
             "y": 360,
-            "scaleX": 0.32715486817515643,
-            "scaleY": 0.32715486817515643
+            "scaleX": 0.2,
+            "scaleY": 0.2
         },
         {
             "type": "Rectangle",

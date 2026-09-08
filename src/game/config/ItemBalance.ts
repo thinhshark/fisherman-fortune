@@ -17,6 +17,7 @@
  * - timeMin/timeMax: gift time range (inclusive)
  * - spawnInterval: seconds between spawn attempts (0 = no repeating timer)
  * - maxSpawnsPerSession: lifetime cap for this session (0 = unlimited)
+ * - allowMultipleActive: true = many of this type may exist on the map at once
  * - explosionRadius: barrel blast radius in logical pixels
  * - spawnWeight: relative chance when several due items compete for one slot
  * - giftMoneyWeight / giftTimeWeight: legacy odds; Gift uses GIFT_CONFIG
@@ -92,6 +93,11 @@ export interface ItemBalanceEntry {
 	spawnInterval: number;
 	/** 0 = unlimited lifetime spawns this session. */
 	maxSpawnsPerSession: number;
+	/**
+	 * When true, more than one instance may be active at once (barrels).
+	 * Default / omitted = only one of this type on the map.
+	 */
+	allowMultipleActive?: boolean;
 	explosionRadius: number;
 	weight: ItemWeight;
 	spawnZones: readonly SpawnZoneLabel[];
@@ -460,8 +466,9 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		timeValue: 0,
 		timeMin: 0,
 		timeMax: 0,
-		spawnInterval: 15,
+		spawnInterval: 30,
 		maxSpawnsPerSession: 0,
+		allowMultipleActive: true,
 		explosionRadius: 200,
 		weight: "Light",
 		spawnZones: ALL_UNDERWATER,
@@ -643,8 +650,11 @@ export function pickGiftOutcome(
 	if (barrel.scoreValue !== -500) {
 		throw new Error("Barrel must deduct exactly 500 score on explode");
 	}
-	if (barrel.spawnInterval !== 15) {
-		throw new Error("Barrel spawnInterval must be 15 seconds");
+	if (barrel.spawnInterval !== 30) {
+		throw new Error("Barrel spawnInterval must be 30 seconds");
+	}
+	if (barrel.allowMultipleActive !== true) {
+		throw new Error("Barrel must allow multiple active instances");
 	}
 }
 

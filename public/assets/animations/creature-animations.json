@@ -748,7 +748,7 @@
             ]
         },
         {
-            "key": "jelly-06-swim",
+            "key": "toxic-jelly-01-swim",
             "frameRate": 10,
             "repeat": -1,
             "delay": 0,
@@ -758,42 +758,42 @@
             "hideOnComplete": false,
             "frames": [
                 {
-                    "key": "jelly-06-swim-001"
+                    "key": "toxic-jelly-01-swim-001"
                 },
                 {
-                    "key": "jelly-06-swim-002"
+                    "key": "toxic-jelly-01-swim-002"
                 },
                 {
-                    "key": "jelly-06-swim-003"
+                    "key": "toxic-jelly-01-swim-003"
                 },
                 {
-                    "key": "jelly-06-swim-004"
+                    "key": "toxic-jelly-01-swim-004"
                 },
                 {
-                    "key": "jelly-06-swim-005"
+                    "key": "toxic-jelly-01-swim-005"
                 },
                 {
-                    "key": "jelly-06-swim-006"
+                    "key": "toxic-jelly-01-swim-006"
                 },
                 {
-                    "key": "jelly-06-swim-007"
+                    "key": "toxic-jelly-01-swim-007"
                 },
                 {
-                    "key": "jelly-06-swim-008"
+                    "key": "toxic-jelly-01-swim-008"
                 },
                 {
-                    "key": "jelly-06-swim-009"
+                    "key": "toxic-jelly-01-swim-009"
                 },
                 {
-                    "key": "jelly-06-swim-010"
+                    "key": "toxic-jelly-01-swim-010"
                 },
                 {
-                    "key": "jelly-06-swim-011"
+                    "key": "toxic-jelly-01-swim-011"
                 }
             ]
         },
         {
-            "key": "jelly-07-swim",
+            "key": "toxic-jelly-02-swim",
             "frameRate": 10,
             "repeat": -1,
             "delay": 0,
@@ -803,42 +803,42 @@
             "hideOnComplete": false,
             "frames": [
                 {
-                    "key": "jelly-07-swim-001"
+                    "key": "toxic-jelly-02-swim-001"
                 },
                 {
-                    "key": "jelly-07-swim-002"
+                    "key": "toxic-jelly-02-swim-002"
                 },
                 {
-                    "key": "jelly-07-swim-003"
+                    "key": "toxic-jelly-02-swim-003"
                 },
                 {
-                    "key": "jelly-07-swim-004"
+                    "key": "toxic-jelly-02-swim-004"
                 },
                 {
-                    "key": "jelly-07-swim-005"
+                    "key": "toxic-jelly-02-swim-005"
                 },
                 {
-                    "key": "jelly-07-swim-006"
+                    "key": "toxic-jelly-02-swim-006"
                 },
                 {
-                    "key": "jelly-07-swim-007"
+                    "key": "toxic-jelly-02-swim-007"
                 },
                 {
-                    "key": "jelly-07-swim-008"
+                    "key": "toxic-jelly-02-swim-008"
                 },
                 {
-                    "key": "jelly-07-swim-009"
+                    "key": "toxic-jelly-02-swim-009"
                 },
                 {
-                    "key": "jelly-07-swim-010"
+                    "key": "toxic-jelly-02-swim-010"
                 },
                 {
-                    "key": "jelly-07-swim-011"
+                    "key": "toxic-jelly-02-swim-011"
                 }
             ]
         },
         {
-            "key": "jelly-08-swim",
+            "key": "toxic-jelly-03-swim",
             "frameRate": 10,
             "repeat": -1,
             "delay": 0,
@@ -848,42 +848,42 @@
             "hideOnComplete": false,
             "frames": [
                 {
-                    "key": "jelly-08-swim-001"
+                    "key": "toxic-jelly-03-swim-001"
                 },
                 {
-                    "key": "jelly-08-swim-002"
+                    "key": "toxic-jelly-03-swim-002"
                 },
                 {
-                    "key": "jelly-08-swim-003"
+                    "key": "toxic-jelly-03-swim-003"
                 },
                 {
-                    "key": "jelly-08-swim-004"
+                    "key": "toxic-jelly-03-swim-004"
                 },
                 {
-                    "key": "jelly-08-swim-005"
+                    "key": "toxic-jelly-03-swim-005"
                 },
                 {
-                    "key": "jelly-08-swim-006"
+                    "key": "toxic-jelly-03-swim-006"
                 },
                 {
-                    "key": "jelly-08-swim-007"
+                    "key": "toxic-jelly-03-swim-007"
                 },
                 {
-                    "key": "jelly-08-swim-008"
+                    "key": "toxic-jelly-03-swim-008"
                 },
                 {
-                    "key": "jelly-08-swim-009"
+                    "key": "toxic-jelly-03-swim-009"
                 },
                 {
-                    "key": "jelly-08-swim-010"
+                    "key": "toxic-jelly-03-swim-010"
                 },
                 {
-                    "key": "jelly-08-swim-011"
+                    "key": "toxic-jelly-03-swim-011"
                 }
             ]
         },
         {
-            "key": "jelly-09-swim",
+            "key": "toxic-jelly-04-swim",
             "frameRate": 10,
             "repeat": -1,
             "delay": 0,
@@ -893,37 +893,37 @@
             "hideOnComplete": false,
             "frames": [
                 {
-                    "key": "jelly-09-swim-001"
+                    "key": "toxic-jelly-04-swim-001"
                 },
                 {
-                    "key": "jelly-09-swim-002"
+                    "key": "toxic-jelly-04-swim-002"
                 },
                 {
-                    "key": "jelly-09-swim-003"
+                    "key": "toxic-jelly-04-swim-003"
                 },
                 {
-                    "key": "jelly-09-swim-004"
+                    "key": "toxic-jelly-04-swim-004"
                 },
                 {
-                    "key": "jelly-09-swim-005"
+                    "key": "toxic-jelly-04-swim-005"
                 },
                 {
-                    "key": "jelly-09-swim-006"
+                    "key": "toxic-jelly-04-swim-006"
                 },
                 {
-                    "key": "jelly-09-swim-007"
+                    "key": "toxic-jelly-04-swim-007"
                 },
                 {
-                    "key": "jelly-09-swim-008"
+                    "key": "toxic-jelly-04-swim-008"
                 },
                 {
-                    "key": "jelly-09-swim-009"
+                    "key": "toxic-jelly-04-swim-009"
                 },
                 {
-                    "key": "jelly-09-swim-010"
+                    "key": "toxic-jelly-04-swim-010"
                 },
                 {
-                    "key": "jelly-09-swim-011"
+                    "key": "toxic-jelly-04-swim-011"
                 }
             ]
         },

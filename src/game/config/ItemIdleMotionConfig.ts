@@ -10,6 +10,10 @@ export const ITEM_IDLE_MOTION = {
 	durationMinMs: 1300,
 	durationMaxMs: 2000,
 	initialDelayMaxMs: 800,
+	/** Barrel patrol: random axis (X or Y), full travel = ±this amplitude. */
+	barrelPatrolAmplitudePx: 100,
+	barrelPatrolDurationMinMs: 2800,
+	barrelPatrolDurationMaxMs: 4200,
 } as const;
 
 export type ItemIdleMotionConfig = typeof ITEM_IDLE_MOTION;

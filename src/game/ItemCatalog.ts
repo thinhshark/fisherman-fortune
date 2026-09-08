@@ -38,6 +38,8 @@ export interface ItemDefinition {
 	timeMax: number;
 	spawnInterval: number;
 	maxSpawnsPerSession: number;
+	/** True = multiple instances may be on the map at once. */
+	allowMultipleActive: boolean;
 	explosionRadius: number;
 	weight: ItemWeight;
 	spawnZones: readonly SpawnZoneLabel[];
@@ -80,6 +82,7 @@ function fromBalance(balance: ItemBalanceEntry): ItemDefinition {
 		timeMax: balance.timeMax,
 		spawnInterval: balance.spawnInterval,
 		maxSpawnsPerSession: balance.maxSpawnsPerSession,
+		allowMultipleActive: balance.allowMultipleActive === true,
 		explosionRadius: balance.explosionRadius,
 		weight: balance.weight,
 		spawnZones: balance.spawnZones,

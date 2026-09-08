@@ -23,9 +23,18 @@ export class ActiveTypeRegistry {
 
 	/**
 	 * `maxSpawnsPerSession` of 0 / undefined means unlimited lifetime spawns.
+	 * When `allowConcurrent` is true, multiple instances of the same type may
+	 * be active at once (e.g. barrels).
 	 */
-	canSpawn(typeId: string, maxSpawnsPerSession?: number): boolean {
-		if (this.destroyed || this.activeTypeIds.has(typeId)) {
+	canSpawn(
+		typeId: string,
+		maxSpawnsPerSession?: number,
+		allowConcurrent = false,
+	): boolean {
+		if (this.destroyed) {
+			return false;
+		}
+		if (!allowConcurrent && this.activeTypeIds.has(typeId)) {
 			return false;
 		}
 		if (
@@ -39,16 +48,21 @@ export class ActiveTypeRegistry {
 	}
 
 	/**
-	 * Register a successful spawn. Increments the lifetime counter and locks
-	 * the type until `release` is called with this token.
+	 * Register a successful spawn. Increments the lifetime counter.
+	 * When `allowConcurrent` is false, locks the type until `release`.
 	 */
-	acquire(typeId: string): number | undefined {
-		if (this.destroyed || this.activeTypeIds.has(typeId)) {
+	acquire(typeId: string, allowConcurrent = false): number | undefined {
+		if (this.destroyed) {
+			return undefined;
+		}
+		if (!allowConcurrent && this.activeTypeIds.has(typeId)) {
 			return undefined;
 		}
 		const token = this.nextToken;
 		this.nextToken += 1;
-		this.activeTypeIds.set(typeId, token);
+		if (!allowConcurrent) {
+			this.activeTypeIds.set(typeId, token);
+		}
 		this.spawnCounts.set(typeId, this.getSpawnCount(typeId) + 1);
 		return token;
 	}
