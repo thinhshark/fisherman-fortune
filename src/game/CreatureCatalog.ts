@@ -25,10 +25,8 @@ export type WeightLabel = CreatureWeight;
 
 export type CreatureCategory =
 	| "Small Fish"
-	| "Jelly"
 	| "Toxic Jelly"
 	| "Big Fish"
-	| "Toxic Fish"
 	| "Normal crab"
 	| "Rare crab";
 
@@ -64,10 +62,8 @@ export const FREQUENCY_WEIGHT: Record<FrequencyLabel, number> = {
  */
 export const CATEGORY_DISPLAY_SCALE: Record<CreatureCategory, number> = {
 	"Small Fish": 0.3936,
-	Jelly: 0.688,
 	"Toxic Jelly": 0.688,
 	"Big Fish": 0.4597,
-	"Toxic Fish": 0.4597,
 	"Normal crab": 0.435,
 	"Rare crab": 0.435,
 };
@@ -154,17 +150,6 @@ export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig
 			isCrab: false,
 			isToxic: false,
 		},
-		Jelly: {
-			category: "Jelly",
-			value: valueSpec("35-100", 35, 100),
-			speedLabel: "Medium",
-			weightLabel: "Medium",
-			// Fishes tab: Medium; Fishes 2: Normal — same weight.
-			frequencyLabel: "Normal",
-			spawnZones: ["Middle", "Lower"],
-			isCrab: false,
-			isToxic: false,
-		},
 		"Toxic Jelly": {
 			category: "Toxic Jelly",
 			value: valueSpec("trừ 50-100$", -100, -50),
@@ -184,16 +169,6 @@ export const CATEGORY_SHEET_CONFIG: Record<CreatureCategory, CategorySheetConfig
 			spawnZones: ["Lower"],
 			isCrab: false,
 			isToxic: false,
-		},
-		"Toxic Fish": {
-			category: "Toxic Fish",
-			value: valueSpec("trừ 50-200$", -200, -50),
-			speedLabel: "Medium",
-			weightLabel: "Light",
-			frequencyLabel: "Medium",
-			spawnZones: ["Upper", "Middle"],
-			isCrab: false,
-			isToxic: true,
 		},
 		"Normal crab": {
 			category: "Normal crab",
@@ -271,14 +246,12 @@ function numbered(
 
 /**
  * Combined Fishes + Fishes 2 row counts (source order) + crab tab:
- * Small 10, Jelly 5, Toxic Jelly 4, Big 6, Toxic Fish 4, Normal crab 2, Rare crab 2 = 33.
+ * Small 14, Toxic Jelly 9, Big 6, Normal crab 2, Rare crab 2 = 33.
  */
 export const CREATURE_CATALOG: readonly CreatureDefinition[] = [
-	...numbered("small-fish", 10, "Small Fish", "swim"),
-	...numbered("jelly", 5, "Jelly", "swim"),
-	...numbered("toxic-jelly", 4, "Toxic Jelly", "swim"),
+	...numbered("small-fish", 14, "Small Fish", "swim"),
+	...numbered("toxic-jelly", 9, "Toxic Jelly", "swim"),
 	...numbered("big-fish", 6, "Big Fish", "swim"),
-	...numbered("toxic-fish", 4, "Toxic Fish", "swim"),
 	...numbered("normal-crab", 2, "Normal crab", "walk"),
 	...numbered("rare-crab", 2, "Rare crab", "walk"),
 ];
@@ -345,10 +318,8 @@ for (const creature of CREATURE_CATALOG) {
 
 	const byCategory: Record<CreatureCategory, CreatureWeight> = {
 		"Small Fish": "Light",
-		Jelly: "Medium",
 		"Toxic Jelly": "Medium",
 		"Big Fish": "Heavy",
-		"Toxic Fish": "Light",
 		"Normal crab": "Light",
 		"Rare crab": "Light",
 	};

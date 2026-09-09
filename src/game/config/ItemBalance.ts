@@ -56,8 +56,8 @@ export const GIFT_CONFIG = {
 	moneyMin: 100,
 	moneyMax: 500,
 	timeChance: 0.5,
-	timeMinSeconds: 5,
-	timeMaxSeconds: 15,
+	timeMinSeconds: 15,
+	timeMaxSeconds: 45,
 } as const;
 
 {
@@ -69,8 +69,8 @@ export const GIFT_CONFIG = {
 	) {
 		throw new Error("GIFT_CONFIG moneyChance + timeChance must equal 1");
 	}
-	if (GIFT_CONFIG.timeMaxSeconds > 15) {
-		throw new Error("Gift time must never exceed 15 seconds");
+	if (GIFT_CONFIG.timeMaxSeconds > 45) {
+		throw new Error("Gift time must never exceed 45 seconds");
 	}
 }
 export interface ItemBalanceEntry {
@@ -159,8 +159,8 @@ export function resolveItemDisplayScale(
  * TEMP: Very Light has no creature retract mapping yet.
  * Faster than Light (500) so scrap feels lighter on the hook.
  */
-const RETRACT_VERY_LIGHT = 650;
-const RETRACT_LIGHT = 500;
+const RETRACT_VERY_LIGHT = 450;
+const RETRACT_LIGHT = 350;
 
 const ALL_UNDERWATER: readonly SpawnZoneLabel[] = ["Upper", "Middle", "Lower"];
 
@@ -433,9 +433,9 @@ export const ITEM_BALANCE: readonly ItemBalanceEntry[] = [
 		scoreMin: 100,
 		scoreMax: 500,
 		timeValue: 0,
-		timeMin: 5,
-		timeMax: 15,
-		spawnInterval: 60,
+		timeMin: 15,
+		timeMax: 45,
+		spawnInterval: 30,
 		maxSpawnsPerSession: 0,
 		explosionRadius: 0,
 		weight: "Light",

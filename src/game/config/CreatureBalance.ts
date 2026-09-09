@@ -30,14 +30,14 @@ export type RewardOperation = "add" | "subtract";
  * Lower = slower pull toward the boat. Edit these to rebalance all creatures
  * of that weight (and keep each creature's `retractSpeed` in sync).
  *
- * Sheet (Fishes): Small/Toxic = Light, Jelly = Medium, Big Fish = Heavy.
+ * Sheet (Fishes): Small = Light, Toxic Jelly = Medium, Big Fish = Heavy.
  */
 export const PULL_SPEED_BY_WEIGHT = {
-	Light: 700,
-	/** Jelly hook retract speed (px/s). Slower than Light, faster than Heavy. */
-	Medium: 280,
+	Light: 500,
+	/** Jelly / toxic jelly hook retract speed (px/s). */
+	Medium: 200,
 	/** Big Fish — must be clearly slowest (px/s). */
-	Heavy: 100,
+	Heavy: 70,
 } as const;
 
 /**
@@ -114,7 +114,6 @@ const SPEED_SLOW = 30;
 const SCALE_SMALL_FISH = 0.3936;
 const SCALE_JELLY = 0.55;
 const SCALE_BIG_FISH = 0.6;
-const SCALE_TOXIC_FISH = 0.4597;
 const SCALE_CRAB = 0.435;
 
 const PULL_LIGHT = PULL_SPEED_BY_WEIGHT.Light;
@@ -122,7 +121,7 @@ const PULL_MEDIUM = PULL_SPEED_BY_WEIGHT.Medium;
 const PULL_HEAVY = PULL_SPEED_BY_WEIGHT.Heavy;
 
 export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
-	// --- Small Fish (Light, sheet Value ranges, Upper/Middle, pull 700) ---
+	// --- Small Fish (Light, sheet Value ranges, Upper/Middle) ---
 	{
 		id: "small-fish-01",
 		nativeFacing: "Right",
@@ -254,74 +253,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		scale: SCALE_SMALL_FISH,
 	},
 
-	// --- Jelly (Medium, sheet Value ranges, Middle/Lower, pull 280) ---
-	{
-		id: "jelly-01",
-		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
-		weight: "Medium",
-		retractSpeed: PULL_MEDIUM,
-		spawnWeight: 3,
-		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "add",
-		scale: SCALE_JELLY,
-	},
-	{
-		id: "jelly-02",
-		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
-		weight: "Medium",
-		retractSpeed: PULL_MEDIUM,
-		spawnWeight: 3,
-		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "add",
-		scale: SCALE_JELLY,
-	},
-	{
-		id: "jelly-03",
-		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
-		weight: "Medium",
-		retractSpeed: PULL_MEDIUM,
-		spawnWeight: 3,
-		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "add",
-		scale: SCALE_JELLY,
-	},
-	{
-		id: "jelly-04",
-		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
-		weight: "Medium",
-		retractSpeed: PULL_MEDIUM,
-		spawnWeight: 3,
-		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "add",
-		scale: SCALE_JELLY,
-	},
-	{
-		id: "jelly-05",
-		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
-		weight: "Medium",
-		retractSpeed: PULL_MEDIUM,
-		spawnWeight: 3,
-		spawnZones: ["Middle", "Lower"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "add",
-		scale: SCALE_JELLY,
-	},
-
-	// --- Toxic Jelly (Medium, trừ 50–100, Middle/Lower, pull 280) ---
+	// --- Toxic Jelly (Medium, trừ 50–100, Middle/Lower) ---
 	{
 		id: "toxic-jelly-01",
 		nativeFacing: "Left",
@@ -374,8 +306,73 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		rewardOperation: "subtract",
 		scale: SCALE_JELLY,
 	},
+	{
+		id: "toxic-jelly-05",
+		nativeFacing: "Right",
+		movementSpeed: SPEED_MEDIUM,
+		weight: "Medium",
+		retractSpeed: PULL_MEDIUM,
+		spawnWeight: 3,
+		spawnZones: ["Middle", "Lower"],
+		rewardMin: 50,
+		rewardMax: 100,
+		rewardOperation: "subtract",
+		scale: SCALE_JELLY,
+	},
+	{
+		id: "toxic-jelly-06",
+		nativeFacing: "Right",
+		movementSpeed: SPEED_MEDIUM,
+		weight: "Medium",
+		retractSpeed: PULL_MEDIUM,
+		spawnWeight: 3,
+		spawnZones: ["Middle", "Lower"],
+		rewardMin: 50,
+		rewardMax: 100,
+		rewardOperation: "subtract",
+		scale: SCALE_JELLY,
+	},
+	{
+		id: "toxic-jelly-07",
+		nativeFacing: "Right",
+		movementSpeed: SPEED_MEDIUM,
+		weight: "Medium",
+		retractSpeed: PULL_MEDIUM,
+		spawnWeight: 3,
+		spawnZones: ["Middle", "Lower"],
+		rewardMin: 50,
+		rewardMax: 100,
+		rewardOperation: "subtract",
+		scale: SCALE_JELLY,
+	},
+	{
+		id: "toxic-jelly-08",
+		nativeFacing: "Right",
+		movementSpeed: SPEED_MEDIUM,
+		weight: "Medium",
+		retractSpeed: PULL_MEDIUM,
+		spawnWeight: 3,
+		spawnZones: ["Middle", "Lower"],
+		rewardMin: 50,
+		rewardMax: 100,
+		rewardOperation: "subtract",
+		scale: SCALE_JELLY,
+	},
+	{
+		id: "toxic-jelly-09",
+		nativeFacing: "Right",
+		movementSpeed: SPEED_MEDIUM,
+		weight: "Medium",
+		retractSpeed: PULL_MEDIUM,
+		spawnWeight: 3,
+		spawnZones: ["Middle", "Lower"],
+		rewardMin: 50,
+		rewardMax: 100,
+		rewardOperation: "subtract",
+		scale: SCALE_JELLY,
+	},
 
-	// --- Big Fish (Heavy, sheet Value ranges, Lower, pull 100) ---
+	// --- Big Fish (Heavy, sheet Value ranges, Lower, pull Heavy) ---
 	{
 		id: "big-fish-01",
 		nativeFacing: "Right",
@@ -467,61 +464,61 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		spawnYMaxRatio: BIG_FISH_Y_MAX,
 	},
 
-	// --- Toxic Fish (Light, sheet trừ ranges, Upper/Middle, pull 700) ---
+	// --- Small Fish (former toxic fish art → small-fish-11..14, +15–25) ---
 	{
-		id: "toxic-fish-01",
+		id: "small-fish-11",
 		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
+		movementSpeed: SPEED_FAST,
 		weight: "Light",
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "subtract",
-		scale: SCALE_TOXIC_FISH,
+		rewardMin: 15,
+		rewardMax: 25,
+		rewardOperation: "add",
+		scale: SCALE_SMALL_FISH,
 	},
 	{
-		id: "toxic-fish-02",
+		id: "small-fish-12",
 		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
+		movementSpeed: SPEED_FAST,
 		weight: "Light",
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "subtract",
-		scale: SCALE_TOXIC_FISH,
+		rewardMin: 15,
+		rewardMax: 25,
+		rewardOperation: "add",
+		scale: SCALE_SMALL_FISH,
 	},
 	{
-		id: "toxic-fish-03",
+		id: "small-fish-13",
 		nativeFacing: "Right",
-		movementSpeed: SPEED_MEDIUM,
+		movementSpeed: SPEED_FAST,
 		weight: "Light",
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 50,
-		rewardMax: 100,
-		rewardOperation: "subtract",
-		scale: SCALE_TOXIC_FISH,
+		rewardMin: 15,
+		rewardMax: 25,
+		rewardOperation: "add",
+		scale: SCALE_SMALL_FISH,
 	},
 	{
-		id: "toxic-fish-04",
+		id: "small-fish-14",
 		nativeFacing: "Left",
-		movementSpeed: SPEED_MEDIUM,
+		movementSpeed: SPEED_FAST,
 		weight: "Light",
 		retractSpeed: PULL_LIGHT,
 		spawnWeight: 3,
 		spawnZones: ["Upper", "Middle"],
-		rewardMin: 100,
-		rewardMax: 200,
-		rewardOperation: "subtract",
-		scale: SCALE_TOXIC_FISH,
+		rewardMin: 15,
+		rewardMax: 25,
+		rewardOperation: "add",
+		scale: SCALE_SMALL_FISH,
 	},
 
-	// --- Normal crab (Light, +1–49, pull 700) ---
+	// --- Normal crab (Light, +1–49) ---
 	{
 		id: "normal-crab-01",
 		nativeFacing: "Left",
@@ -549,7 +546,7 @@ export const CREATURE_BALANCE: readonly CreatureBalanceEntry[] = [
 		scale: SCALE_CRAB,
 	},
 
-	// --- Rare crab (Light, +50–100, pull 700) ---
+	// --- Rare crab (Light, +50–100) ---
 	{
 		id: "rare-crab-01",
 		nativeFacing: "Left",
@@ -681,11 +678,9 @@ if (CREATURE_BALANCE.length !== 33) {
 		weight: CreatureWeight;
 		pullSpeed: number;
 	}[] = [
-		{ prefix: "small-fish-", count: 10, weight: "Light", pullSpeed: PULL_LIGHT },
-		{ prefix: "jelly-", count: 5, weight: "Medium", pullSpeed: PULL_MEDIUM },
-		{ prefix: "toxic-jelly-", count: 4, weight: "Medium", pullSpeed: PULL_MEDIUM },
+		{ prefix: "small-fish-", count: 14, weight: "Light", pullSpeed: PULL_LIGHT },
+		{ prefix: "toxic-jelly-", count: 9, weight: "Medium", pullSpeed: PULL_MEDIUM },
 		{ prefix: "big-fish-", count: 6, weight: "Heavy", pullSpeed: PULL_HEAVY },
-		{ prefix: "toxic-fish-", count: 4, weight: "Light", pullSpeed: PULL_LIGHT },
 	];
 
 	for (const family of families) {

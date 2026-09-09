@@ -29,7 +29,7 @@ const LOG_JAW_TARGETS = false;
  * The only speed constant this controller owns. Every caught-object speed
  * comes from the caught definition's CreatureBalance/ItemBalance retractSpeed.
  */
-export const EMPTY_RETRACT_SPEED_PX_PER_SEC = 850;
+export const EMPTY_RETRACT_SPEED_PX_PER_SEC = 600;
 
 /** Dev-only: distinguishes controller instances if one ever leaks a restart. */
 let nextHookInstanceId = 1;

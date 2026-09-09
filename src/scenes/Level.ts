@@ -224,14 +224,6 @@ export default class Level extends Phaser.Scene {
 		this.itemSpawner.update(time, gameplayDelta);
 		this.catchController.update(time, gameplayDelta);
 		this.gameSession.update(time, gameplayDelta);
-
-		// After timer zero: wait until hook is safely SWINGING, then finish.
-		if (
-			this.gameSession.isEnding &&
-			this.hookController.isAtRest
-		) {
-			this.gameSession.completeEnding();
-		}
 	}
 
 	private handleHomePlay(): void {
@@ -343,25 +335,18 @@ export default class Level extends Phaser.Scene {
 		}
 		this.endingHandled = true;
 
+		// Freeze everything in place — undelivered catch must not continue or score.
 		this.hookController.setInputEnabled(false);
+		this.hookController.setPaused(true);
+		this.catchController.setPaused(true);
 		this.creatureSpawner.setEnabled(false);
 		this.creatureSpawner.setPaused(true);
 		this.itemSpawner.setEnabled(false);
 		this.itemSpawner.setPaused(true);
+		this.environmentEffects?.setPaused(true);
 		this.catchFeedbackController.setPaused(true);
 		this.pauseController.setGameplayActive(false);
-
-		if (this.hookController.state === "SWINGING") {
-			this.gameSession.completeEnding();
-			return;
-		}
-
-		if (this.hookController.state === "CASTING") {
-			// Empty cast: pull back. If CatchController already claimed a target,
-			// state is RETRACTING and this no-ops.
-			this.hookController.forceEmptyRetractIfCasting();
-		}
-		// RETRACTING: continue; CatchController delivers once at boat.
+		// GameSession.completeEnding() runs right after this event (immediate cut).
 	}
 
 	/**

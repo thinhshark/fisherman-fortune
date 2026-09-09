@@ -24,9 +24,9 @@ export const TIME_BONUS_EVENT = "time-bonus";
 export const BONUS_COLLECTED_EVENT = "bonus-collected";
 /** Home → Play; gameplay systems become active. */
 export const GAMEPLAY_STARTED_EVENT = "gameplay-started";
-/** Timer hit zero; gameplay is winding down (no new casts). */
+/** Timer hit zero; systems freeze then result shows immediately. */
 export const GAME_ENDING_EVENT = "game-ending";
-/** Hook is safely at rest; show result overlay. */
+/** Round over; show result overlay (no grace retract). */
 export const GAME_FINISHED_EVENT = "game-finished";
 
 export type GameSessionState = "ready" | "playing" | "ending" | "finished";
@@ -77,7 +77,8 @@ export interface GameplayStartedPayload {
  * Round session: score + countdown.
  * Floating reward / time text is owned exclusively by CatchFeedbackController.
  *
- * States: ready → playing → ending (timer 0) → finished (hook at rest).
+ * States: ready → playing → ending (timer 0, brief) → finished (immediate cut).
+ * Undelivered catches do not score after the timer hits zero.
  */
 export class GameSession {
 	static readonly DURATION_SECONDS = 100;
@@ -202,8 +203,8 @@ export class GameSession {
 	}
 
 	/**
-	 * Called by Level when the hook is safely SWINGING after ending began.
 	 * Transitions ending → finished and emits game-finished once.
+	 * Called immediately when the timer hits zero (no retract grace).
 	 */
 	completeEnding(): void {
 		if (this.destroyed || this._state !== "ending") {
@@ -268,10 +269,12 @@ export class GameSession {
 				finalScore: this._score,
 			});
 		}
+		// Cut immediately — no waiting for hook retract / boat delivery.
+		this.completeEnding();
 	}
 
 	private handleCreatureDelivered(payload: CreatureDeliveredPayload): void {
-		if (this.destroyed || this._state === "finished") {
+		if (this.destroyed || this._state !== "playing") {
 			return;
 		}
 
@@ -299,7 +302,7 @@ export class GameSession {
 	}
 
 	private handleItemDelivered(payload: ItemDeliveredPayload): void {
-		if (this.destroyed || this._state === "finished") {
+		if (this.destroyed || this._state !== "playing") {
 			return;
 		}
 
@@ -359,7 +362,7 @@ export class GameSession {
 
 	/** Barrel detonates on catch (not delivery); apply score penalty here. */
 	private handleBarrelExploded(payload: BarrelExplodedPayload): void {
-		if (this.destroyed || this._state === "ready" || this._state === "finished") {
+		if (this.destroyed || this._state !== "playing") {
 			return;
 		}
 
