@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import type { AudioController } from "./AudioController";
 import { FlutterGameBridge } from "./FlutterGameBridge";
+import { LeaderboardOverlay } from "./LeaderboardOverlay";
 
 const OVERLAY_DEPTH = 1500;
 const CONTROL_DEPTH = 1510;
@@ -57,11 +58,15 @@ export class HomeController {
 	private leaderboardArmed = true;
 	private soundArmed = true;
 	private musicArmed = true;
+	private readonly leaderboardOverlay: LeaderboardOverlay;
 
 	constructor(scene: Phaser.Scene, options: HomeControllerOptions) {
 		this.scene = scene;
 		this.audio = options.audio;
 		this.onPlay = options.onPlay;
+		this.leaderboardOverlay = new LeaderboardOverlay(scene, {
+			audio: options.audio,
+		});
 
 		this.requireTextures();
 		this.buildUi();
@@ -84,6 +89,7 @@ export class HomeController {
 		}
 		this.destroyed = true;
 		this.visible = false;
+		this.leaderboardOverlay.destroy();
 
 		this.scene.scale.off("resize", this.boundResize);
 		this.scene.events.off(
@@ -405,7 +411,7 @@ export class HomeController {
 		this.leaderboardButton?.disableInteractive();
 		this.leaderboardButton?.clearTint();
 		this.audio.playButtonSfx();
-		FlutterGameBridge.sendOpenLeaderboard();
+		this.leaderboardOverlay.show();
 		this.scene.time.delayedCall(400, () => {
 			if (!this.destroyed && this.visible) {
 				this.leaderboardArmed = true;

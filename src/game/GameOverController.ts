@@ -6,6 +6,7 @@ import {
 } from "./GameSession";
 import type { AudioController } from "./AudioController";
 import { FlutterGameBridge } from "./FlutterGameBridge";
+import { LeaderboardOverlay } from "./LeaderboardOverlay";
 import { ScoreStorage } from "./ScoreStorage";
 
 const OVERLAY_DEPTH = 2000;
@@ -36,7 +37,7 @@ export interface GameOverControllerOptions {
 
 /**
  * End-of-round Result: YOUR SCORE → value → Restart | Home | Leaderboard.
- * Submits score once via FlutterGameBridge; Flutter owns the real leaderboard.
+ * Leaderboard opens the in-game `bxh` panel (not Flutter).
  */
 export class GameOverController {
 	private readonly scene: Phaser.Scene;
@@ -67,12 +68,16 @@ export class GameOverController {
 	private scoreSubmitted = false;
 	private finalScore = 0;
 	private gameSessionId = "";
+	private readonly leaderboardOverlay: LeaderboardOverlay;
 
 	constructor(scene: Phaser.Scene, options: GameOverControllerOptions) {
 		this.scene = scene;
 		this.audio = options.audio;
 		this.onPlayAgain = options.onPlayAgain;
 		this.onHome = options.onHome;
+		this.leaderboardOverlay = new LeaderboardOverlay(scene, {
+			audio: options.audio,
+		});
 		scene.events.on(GAME_FINISHED_EVENT, this.boundFinished);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
 	}
@@ -87,6 +92,7 @@ export class GameOverController {
 		}
 		this.destroyed = true;
 		this.actionsArmed = false;
+		this.leaderboardOverlay.destroy();
 		this.scene.events.off(GAME_FINISHED_EVENT, this.boundFinished);
 		this.scene.scale.off("resize", this.boundResize);
 		this.scene.events.off(
@@ -354,6 +360,7 @@ export class GameOverController {
 		}
 		this.disableAllActions();
 		this.audio?.playButtonSfx();
+		this.leaderboardOverlay.hide();
 
 		if (this.gameSessionId) {
 			FlutterGameBridge.sendRestartGame(this.gameSessionId);
@@ -376,7 +383,7 @@ export class GameOverController {
 		this.leaderboardArmed = false;
 		this.leaderboardButton?.disableInteractive();
 		this.audio?.playButtonSfx();
-		FlutterGameBridge.sendOpenLeaderboard();
+		this.leaderboardOverlay.show();
 		this.scene.time.delayedCall(400, () => {
 			if (!this.destroyed && this.visible && this.actionsArmed) {
 				this.leaderboardArmed = true;
@@ -394,6 +401,7 @@ export class GameOverController {
 		}
 		this.disableAllActions();
 		this.audio?.playButtonSfx();
+		this.leaderboardOverlay.hide();
 		this.scene.scale.off("resize", this.boundResize);
 		this.teardownUi();
 		this.onHome();
