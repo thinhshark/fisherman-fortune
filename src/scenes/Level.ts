@@ -22,6 +22,7 @@ import { HomeController } from "../game/HomeController";
 import { FlutterGameBridge } from "../game/FlutterGameBridge";
 import { ActiveTypeRegistry } from "../game/ActiveTypeRegistry";
 import { EnvironmentEffects } from "../game/EnvironmentEffects";
+import { PlayerBombController } from "../game/PlayerBombController";
 import {
 	consumeLevelBootIntent,
 	setLevelBootIntent,
@@ -110,6 +111,7 @@ export default class Level extends Phaser.Scene {
 	private audioController?: AudioController;
 	private pauseController!: PauseController;
 	private homeController?: HomeController;
+	private playerBombController?: PlayerBombController;
 	private readonly boundGameEnding = this.handleGameEnding.bind(this);
 	private endingHandled = false;
 	/** Discard first gameplay delta after resume to avoid a large frame jump. */
@@ -160,6 +162,22 @@ export default class Level extends Phaser.Scene {
 		});
 		this.pauseController.setGameplayActive(false);
 
+		const water = this.water;
+		if (!water) {
+			throw new Error(
+				"Level is missing required scene object: water must exist for bomb launcher.",
+			);
+		}
+		this.playerBombController = new PlayerBombController(
+			this,
+			this.gameSession,
+			this.hookController,
+			this.itemSpawner,
+			this.creatureSpawner,
+			water,
+			this.audioController,
+		);
+
 		this.applyDisplayDepths();
 
 		this.events.on(GAME_ENDING_EVENT, this.boundGameEnding);
@@ -168,6 +186,8 @@ export default class Level extends Phaser.Scene {
 			this.events.off(GAME_ENDING_EVENT, this.boundGameEnding);
 			this.homeController?.destroy();
 			this.homeController = undefined;
+			this.playerBombController?.destroy();
+			this.playerBombController = undefined;
 			this.pauseController?.destroy();
 			this.audioController?.destroy();
 			this.audioController = undefined;
@@ -223,6 +243,7 @@ export default class Level extends Phaser.Scene {
 		this.creatureSpawner.update(time, gameplayDelta);
 		this.itemSpawner.update(time, gameplayDelta);
 		this.catchController.update(time, gameplayDelta);
+		this.playerBombController?.update(time, gameplayDelta);
 		this.gameSession.update(time, gameplayDelta);
 	}
 
@@ -260,6 +281,7 @@ export default class Level extends Phaser.Scene {
 		this.itemSpawner.beginSpawning(this.creatureSpawner.getActiveCenters());
 		this.catchController.setPaused(false);
 		this.hudController.setVisible(true);
+		this.playerBombController?.setGameplayVisible(true);
 		this.pauseController.setGameplayActive(true);
 
 		FlutterGameBridge.sendGameStarted({
@@ -278,6 +300,7 @@ export default class Level extends Phaser.Scene {
 		this.itemSpawner.setPaused(paused);
 		this.catchController.setPaused(paused);
 		this.catchFeedbackController.setPaused(paused);
+		this.playerBombController?.setPaused(paused);
 
 		const audio = this.audioController;
 		if (!audio) {
@@ -345,6 +368,9 @@ export default class Level extends Phaser.Scene {
 		this.itemSpawner.setPaused(true);
 		this.environmentEffects?.setPaused(true);
 		this.catchFeedbackController.setPaused(true);
+		this.playerBombController?.setPaused(true);
+		this.playerBombController?.clearProjectile();
+		this.playerBombController?.setGameplayVisible(false);
 		this.pauseController.setGameplayActive(false);
 		// GameSession.completeEnding() runs right after this event (immediate cut).
 	}

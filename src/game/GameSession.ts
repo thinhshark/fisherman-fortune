@@ -12,6 +12,7 @@ import {
 	pickGiftOutcome,
 	type ItemBalanceEntry,
 } from "./config/ItemBalance";
+import { BombBalance } from "./config/BombBalance";
 import type { ItemEffectType } from "./ItemCatalog";
 import {
 	BARREL_EXPLODED_EVENT,
@@ -22,6 +23,8 @@ export const SCORE_CHANGED_EVENT = "score-changed";
 export const TIME_CHANGED_EVENT = "time-changed";
 export const TIME_BONUS_EVENT = "time-bonus";
 export const BONUS_COLLECTED_EVENT = "bonus-collected";
+export const BOMB_COUNT_CHANGED_EVENT = "bomb-count-changed";
+export const BOMB_GAINED_EVENT = "bomb-gained";
 /** Home → Play; gameplay systems become active. */
 export const GAMEPLAY_STARTED_EVENT = "gameplay-started";
 /** Timer hit zero; systems freeze then result shows immediately. */
@@ -46,6 +49,17 @@ export interface ScoreChangedPayload {
 
 export interface TimeChangedPayload {
 	remainingSeconds: number;
+}
+
+export interface BombCountChangedPayload {
+	count: number;
+}
+
+export interface BombGainedPayload {
+	delta: number;
+	count: number;
+	deliveryX: number;
+	deliveryY: number;
 }
 
 export interface TimeBonusPayload {
@@ -91,6 +105,7 @@ export class GameSession {
 		this.handleBarrelExploded.bind(this);
 
 	private _score = 0;
+	private _bombCount = 0;
 	private remainingMs = GameSession.DURATION_SECONDS * 1000;
 	private lastEmittedSeconds = GameSession.DURATION_SECONDS;
 	private _state: GameSessionState = "ready";
@@ -112,6 +127,10 @@ export class GameSession {
 
 	get score(): number {
 		return this._score;
+	}
+
+	get bombCount(): number {
+		return this._bombCount;
 	}
 
 	/** Unique id for this Level round (new on each scene create / restart). */
@@ -171,11 +190,47 @@ export class GameSession {
 		}
 		this._state = "playing";
 		this.startedEmitted = true;
+		this.resetBombsForGameplay();
 		this.scene.events.emit(GAMEPLAY_STARTED_EVENT, {
 			gameSessionId: this._gameSessionId,
 			durationSeconds: GameSession.DURATION_SECONDS,
 		} satisfies GameplayStartedPayload);
 		return true;
+	}
+
+	/** Reset bomb inventory when a round starts. */
+	resetBombsForGameplay(): void {
+		this._bombCount = BombBalance.START_COUNT;
+		this.emitBombCount();
+	}
+
+	addBombs(delta: number, deliveryX: number, deliveryY: number): void {
+		if (this.destroyed || this._state !== "playing" || delta <= 0) {
+			return;
+		}
+		this._bombCount += delta;
+		this.emitBombCount();
+		this.scene.events.emit(BOMB_GAINED_EVENT, {
+			delta,
+			count: this._bombCount,
+			deliveryX,
+			deliveryY,
+		} satisfies BombGainedPayload);
+	}
+
+	tryConsumeBomb(): boolean {
+		if (this.destroyed || this._state !== "playing" || this._bombCount <= 0) {
+			return false;
+		}
+		this._bombCount -= 1;
+		this.emitBombCount();
+		return true;
+	}
+
+	private emitBombCount(): void {
+		this.scene.events.emit(BOMB_COUNT_CHANGED_EVENT, {
+			count: this._bombCount,
+		} satisfies BombCountChangedPayload);
 	}
 
 	/**
@@ -365,6 +420,9 @@ export class GameSession {
 		if (this.destroyed || this._state !== "playing") {
 			return;
 		}
+		if (payload.applyScorePenalty === false) {
+			return;
+		}
 
 		const balance = getItemBalance(payload.sourceId);
 		if (!balance || balance.rewardType !== "bomb") {
@@ -411,14 +469,18 @@ export class GameSession {
 			} satisfies ScoreChangedPayload);
 			return;
 		}
-		this.addTime(outcome.seconds);
-		this.scene.events.emit(TIME_BONUS_EVENT, {
-			secondsAdded: outcome.seconds,
-			sourceId: payload.id,
-			deliveryX: payload.deliveryX,
-			deliveryY: payload.deliveryY,
-			remainingSeconds: this.remainingSeconds,
-		} satisfies TimeBonusPayload);
+		if (outcome.kind === "time") {
+			this.addTime(outcome.seconds);
+			this.scene.events.emit(TIME_BONUS_EVENT, {
+				secondsAdded: outcome.seconds,
+				sourceId: payload.id,
+				deliveryX: payload.deliveryX,
+				deliveryY: payload.deliveryY,
+				remainingSeconds: this.remainingSeconds,
+			} satisfies TimeBonusPayload);
+			return;
+		}
+		this.addBombs(1, payload.deliveryX, payload.deliveryY);
 	}
 
 	private emitFinishedOnce(): void {

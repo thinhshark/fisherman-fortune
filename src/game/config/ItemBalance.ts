@@ -33,6 +33,7 @@
  */
 
 import type Phaser from "phaser";
+import { PLAYER_BOMB_GIFT } from "./BombBalance";
 
 export type ItemWeight = "Very Light" | "Light" | "Medium" | "Heavy";
 export type SpawnZoneLabel = "Upper" | "Middle" | "Lower";
@@ -48,26 +49,30 @@ export type ItemEffectType =
 	| "gift";
 
 /**
- * Bag/Gift outcome — exactly one of money or time per delivery.
- * moneyChance + timeChance must equal 1. No voucher path.
+ * Bag/Gift outcome — exactly one of money, time, or bomb per delivery.
+ * moneyChance + timeChance + bombChance must equal 1. No voucher path.
  */
 export const GIFT_CONFIG = {
-	moneyChance: 0.5,
+	moneyChance: PLAYER_BOMB_GIFT.moneyChance,
 	moneyMin: 100,
 	moneyMax: 500,
-	timeChance: 0.5,
+	timeChance: PLAYER_BOMB_GIFT.timeChance,
 	timeMinSeconds: 15,
 	timeMaxSeconds: 45,
+	bombChance: PLAYER_BOMB_GIFT.bombChance,
 } as const;
 
 {
-	const { moneyChance, timeChance } = GIFT_CONFIG;
+	const { moneyChance, timeChance, bombChance } = GIFT_CONFIG;
 	if (
 		typeof moneyChance !== "number" ||
 		typeof timeChance !== "number" ||
-		Math.abs(moneyChance + timeChance - 1) > 1e-9
+		typeof bombChance !== "number" ||
+		Math.abs(moneyChance + timeChance + bombChance - 1) > 1e-9
 	) {
-		throw new Error("GIFT_CONFIG moneyChance + timeChance must equal 1");
+		throw new Error(
+			"GIFT_CONFIG moneyChance + timeChance + bombChance must equal 1",
+		);
 	}
 	if (GIFT_CONFIG.timeMaxSeconds > 45) {
 		throw new Error("Gift time must never exceed 45 seconds");
@@ -522,10 +527,11 @@ if (ITEM_BALANCE.length !== 12) {
 
 export type GiftOutcome =
 	| { kind: "money"; amount: number }
-	| { kind: "time"; seconds: number };
+	| { kind: "time"; seconds: number }
+	| { kind: "bomb" };
 
 /**
- * Exactly one gift outcome (money XOR time). Voucher is never selected.
+ * Exactly one gift outcome (money XOR time XOR bomb). Voucher is never selected.
  * Uses GIFT_CONFIG chances/ranges; balance gift* fields stay as documentation sync.
  */
 export function pickGiftOutcome(
@@ -551,13 +557,16 @@ export function pickGiftOutcome(
 			amount: randomInt(GIFT_CONFIG.moneyMin, GIFT_CONFIG.moneyMax),
 		};
 	}
-	return {
-		kind: "time",
-		seconds: randomInt(
-			GIFT_CONFIG.timeMinSeconds,
-			GIFT_CONFIG.timeMaxSeconds,
-		),
-	};
+	if (roll < GIFT_CONFIG.moneyChance + GIFT_CONFIG.timeChance) {
+		return {
+			kind: "time",
+			seconds: randomInt(
+				GIFT_CONFIG.timeMinSeconds,
+				GIFT_CONFIG.timeMaxSeconds,
+			),
+		};
+	}
+	return { kind: "bomb" };
 }
 
 {

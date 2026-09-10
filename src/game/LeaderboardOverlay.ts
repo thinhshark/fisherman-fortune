@@ -6,7 +6,6 @@ const OVERLAY_DEPTH = 2100;
 const OVERLAY_ALPHA = 0.72;
 const DESIGN_WIDTH = 1280;
 const DESIGN_HEIGHT = 720;
-const SAFE_MARGIN = 28;
 const MIN_HIT = 72;
 const BACK_SCALE = 0.7;
 /** Max board footprint inside the design frame. */
@@ -189,8 +188,6 @@ export class LeaderboardOverlay {
 		}
 
 		const board = this.board;
-		let boardLeft = SAFE_MARGIN;
-		let boardTop = SAFE_MARGIN;
 		if (board) {
 			const src = board.texture.getSourceImage() as {
 				width: number;
@@ -203,18 +200,18 @@ export class LeaderboardOverlay {
 				maxH / Math.max(1, src.height),
 			);
 			board.setScale(scale).setPosition(cx, cy);
-			boardLeft = cx - board.displayWidth * 0.5;
-			boardTop = cy - board.displayHeight * 0.5;
 		}
 
-		const backScale = Math.max(BACK_SCALE * ui, MIN_HIT / 120);
-		this.backButton?.setScale(backScale);
 		const back = this.backButton;
-		if (back) {
-			const inset = 18 * ui;
+		if (back && board) {
+			const backScale = Math.max(BACK_SCALE * ui, MIN_HIT / 160);
+			back.setScale(backScale);
+			const bounds = board.getBounds();
+			const inset = Math.max(16, 20 * ui);
+			// Anchor inside the board's top-left (not the raw screen corner).
 			back.setPosition(
-				boardLeft + back.displayWidth * 0.5 + inset,
-				boardTop + back.displayHeight * 0.5 + inset,
+				bounds.left + inset + back.displayWidth * 0.5,
+				bounds.top + inset + back.displayHeight * 0.5,
 			);
 			this.ensureMinHitArea(back);
 		}

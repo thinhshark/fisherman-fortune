@@ -32,6 +32,8 @@ export interface BarrelExplodedPayload {
 	x: number;
 	y: number;
 	sourceId: string;
+	/** When false, GameSession must not apply −500. Default true for hook catches. */
+	applyScorePenalty: boolean;
 }
 
 /** Set true briefly while diagnosing explosion hit detection. */
@@ -294,6 +296,7 @@ export class ItemSpawner {
 	detonateBarrel(
 		item: CatchableItem | ItemGameObject,
 		creatureSpawner?: CreatureSpawner,
+		options?: { applyScorePenalty?: boolean },
 	): boolean {
 		if (this.destroyed) {
 			return false;
@@ -369,6 +372,7 @@ export class ItemSpawner {
 			x: originX,
 			y: originY,
 			sourceId: entry.definition.id,
+			applyScorePenalty: options?.applyScorePenalty !== false,
 		} satisfies BarrelExplodedPayload);
 		this.explodingKeys.delete(key);
 		return true;

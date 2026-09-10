@@ -3,6 +3,10 @@ import { getCreatureById } from "./CreatureCatalog";
 import { getItemById } from "./ItemCatalog";
 import { AudioSettings } from "./config/AudioSettings";
 import {
+	GameplayAssetLoader,
+	MUSIC_READY_EVENT,
+} from "./GameplayAssetLoader";
+import {
 	HOOK_STATE_CHANGED_EVENT,
 	type HookStateChangedPayload,
 } from "./HookController";
@@ -130,6 +134,7 @@ export class AudioController {
 	private readonly boundTimeChanged = this.handleTimeChanged.bind(this);
 	private readonly boundGameFinished = this.handleGameFinished.bind(this);
 	private readonly boundBarrelExploded = this.handleBarrelExploded.bind(this);
+	private readonly boundMusicReady = this.handleMusicReady.bind(this);
 	private readonly boundUnlockPointer = this.handleUnlockGesture.bind(this);
 	private readonly boundUnlockSpace = this.handleUnlockGesture.bind(this);
 	private readonly boundDestroy = this.destroy.bind(this);
@@ -150,6 +155,8 @@ export class AudioController {
 		scene.events.on(TIME_CHANGED_EVENT, this.boundTimeChanged);
 		scene.events.on(GAME_FINISHED_EVENT, this.boundGameFinished);
 		scene.events.on(BARREL_EXPLODED_EVENT, this.boundBarrelExploded);
+		// Music loads on game.events so a mid-load Level restart still receives ready.
+		scene.game.events.on(MUSIC_READY_EVENT, this.boundMusicReady);
 		scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.boundDestroy);
 		scene.events.once(Phaser.Scenes.Events.DESTROY, this.boundDestroy);
 
@@ -259,6 +266,8 @@ export class AudioController {
 		this.pauseOverlayOpen = false;
 		this.screenMode = "gameplay";
 		this.requestedMusicKey = MUSIC_GAME_KEY;
+		// BGM is deferred from runtime pack — kick lazy load, then play (or wait for ready).
+		GameplayAssetLoader.ensureMusicLoading(this.scene);
 		this.playMusic(MUSIC_GAME_KEY);
 		this.dumpAudioState("play-pressed");
 	}
@@ -540,6 +549,7 @@ export class AudioController {
 		this.scene.events.off(TIME_CHANGED_EVENT, this.boundTimeChanged);
 		this.scene.events.off(GAME_FINISHED_EVENT, this.boundGameFinished);
 		this.scene.events.off(BARREL_EXPLODED_EVENT, this.boundBarrelExploded);
+		this.scene.game.events.off(MUSIC_READY_EVENT, this.boundMusicReady);
 		this.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.boundDestroy);
 		this.scene.events.off(Phaser.Scenes.Events.DESTROY, this.boundDestroy);
 
@@ -599,6 +609,20 @@ export class AudioController {
 			return;
 		}
 		if (this.requestedMusicKey === MUSIC_GAME_KEY) {
+			this.playMusic(MUSIC_GAME_KEY);
+		}
+	}
+
+	/** Lazy BGM finished loading — start if Play already requested it. */
+	private handleMusicReady(): void {
+		if (this.destroyed || !this.gameplayActive || this.screenMode === "home") {
+			return;
+		}
+		if (this.pauseOverlayOpen) {
+			return;
+		}
+		if (this.requestedMusicKey === MUSIC_GAME_KEY) {
+			this.log("music-ready", MUSIC_GAME_KEY);
 			this.playMusic(MUSIC_GAME_KEY);
 		}
 	}

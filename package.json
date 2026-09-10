@@ -14,8 +14,9 @@
     },
     "homepage": "https://github.com/phaserjs/template-vite-ts#readme",
     "scripts": {
-        "start": "vite --config vite/config.dev.mjs",
-        "build": "vite build --config vite/config.prod.mjs && phaser-asset-pack-hashing -j -r dist"
+        "split-packs": "node scripts/split-asset-packs.mjs",
+        "start": "npm run split-packs && vite --config vite/config.dev.mjs",
+        "build": "npm run split-packs && vite build --config vite/config.prod.mjs && phaser-asset-pack-hashing -j -r dist"
     },
     "devDependencies": {
         "phaser-asset-pack-hashing": "^1.0.6",

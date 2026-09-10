@@ -228,6 +228,21 @@ export class HookController {
 		return { x: this.anchorX, y: this.anchorY };
 	}
 
+	/** Boat-relative swing angle (radians). */
+	get swingAngleRad(): number {
+		return this.swingRotation;
+	}
+
+	/**
+	 * World aim rotation for cast / bomb (radians).
+	 * Matches cast extension: local +Y along the rope.
+	 */
+	get worldAimAngleRad(): number {
+		return this.player
+			? this.player.rotation + this.swingRotation
+			: this.swingRotation;
+	}
+
 	get state(): HookState {
 		return this._state;
 	}
